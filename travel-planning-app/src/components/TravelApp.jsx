@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
-import TopBar from './TopBar'
+import Topbar from './Topbar'
 
 export default function TravelApp() {
     const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -14,7 +14,7 @@ export default function TravelApp() {
             onClose={() => setSidebarOpen(false)}
         />
         <div className="lg:pl-72">
-            <TopBar onMenuClick={() => setSidebarOpen(true)} />
+            <Topbar onMenuClick={() => setSidebarOpen(true)} />
             <main>
             <Outlet />
             </main>
