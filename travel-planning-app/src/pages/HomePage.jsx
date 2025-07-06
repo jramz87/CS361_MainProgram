@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import { ChevronDownIcon } from '../components/Icons'
 import Contact from './Contact'
 import FeaturesSection from '../components/FeatureSection'
+import banner from '../assets/banner.png'
 
 export default function HomePage() {
     return (
@@ -12,7 +12,7 @@ export default function HomePage() {
             <div 
             className="absolute inset-0 -z-20 bg-cover bg-center bg-no-repeat opacity-30"
             style={{
-                backgroundImage: 'url(/src/assets/banner.png)',
+                backgroundImage: `url(${banner})`,
             }}
             />
             

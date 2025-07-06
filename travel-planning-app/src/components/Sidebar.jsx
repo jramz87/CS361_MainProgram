@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { XMarkIcon } from './Icons'
 import { navigation } from '../config/navigation'
+import logo from '../assets/Canva_Design.png'
 
 export default function Sidebar({ isOpen, onClose }) {
     const location = useLocation()
@@ -20,7 +21,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 <div className="flex justify-between items-start py-6">
                     <div className="flex justify-center flex-1">
                         <img 
-                            src="/src/assets/Canva_Design.png" 
+                            src={logo} 
                             alt="Logo" 
                             style={{ 
                                 height: '180px',
@@ -74,7 +75,7 @@ export default function Sidebar({ isOpen, onClose }) {
             <div className="flex grow flex-col overflow-y-auto px-6 pb-4" style={{ backgroundColor: '#0081A7' }}>
                 <div className="flex justify-center py-6">
                     <img 
-                        src="/src/assets/Canva_Design.png" 
+                        src={logo}
                         alt="Logo" 
                         style={{ 
                             height: '240px', 
