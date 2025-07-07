@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3001/api'
+    : '/api';
 
 export const getWeatherForecast = async (location, startDate, endDate) => {
     if (!location || !startDate || !endDate) {

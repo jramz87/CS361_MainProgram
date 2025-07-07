@@ -4,6 +4,11 @@ import axios from 'axios';
 import rateLimit from 'express-rate-limit';
 import { GenAIRecommendationService } from './services/genAIRecommendations.js';
 import { config } from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 config();
 
@@ -58,6 +63,20 @@ app.get('/health', (req, res) => {
         }
     };
     res.json(status);
+});
+
+app.use(express.static(path.join(__dirname, '../travel-planning-app/build')));
+
+app.get('*', (req, res) => {
+  // Don't serve index.html for API routes
+    if (req.path.startsWith('/api/') || req.path.startsWith('/health')) {
+        return res.status(404).json({ 
+        error: 'API route not found',
+        message: `Route ${req.method} ${req.originalUrl} not found`
+        });
+    }
+    
+    res.sendFile(path.join(__dirname, '../travel-planning-app/build/index.html'));
 });
 
 // Weather forecast endpoint with better error handling
@@ -141,8 +160,8 @@ app.get('/api/weather/forecast', async (req, res) => {
                     return res.status(429).json({ error: 'Weather service rate limit exceeded. Please try again later.' });
                 case 400:
                     return res.status(400).json({ error: 'Invalid location or date parameters' });
-                case 404:
-                    return res.status(404).json({ error: 'Location not found. Please check the location name.' });
+                //case 404:
+                //    return res.status(404).json({ error: 'Location not found. Please check the location name.' });
                 default:
                     return res.status(500).json({ error: `Weather service error (${status})` });
             }
