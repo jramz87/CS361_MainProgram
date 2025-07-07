@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { ChevronDownIcon } from '../components/Icons'
+import { useState } from 'react';
+import { ChevronDownIcon } from '../components/Icons';
 
 export default function Contact() {
     const [formData, setFormData] = useState({

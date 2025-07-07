@@ -1,4 +1,4 @@
-import { WeatherIcon, AIIcon, UsersIcon } from './Icons'
+import { WeatherIcon, AIIcon, UsersIcon } from './Icons';
 
 const features = [
     {
@@ -48,7 +48,7 @@ export default function FeaturesSection() {
                     <p className="flex-auto">{feature.description}</p>
                     <p className="mt-6">
                         <a href={feature.href} className="text-sm font-semibold hover:opacity-80" style={{ color: '#00AFB9' }}>
-                        Learn more <span aria-hidden="true">→</span>
+                        Take me there <span aria-hidden="true">→</span>
                         </a>
                     </p>
                     </dd>

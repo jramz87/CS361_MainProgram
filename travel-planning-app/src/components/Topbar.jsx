@@ -1,4 +1,4 @@
-import { BarsIcon } from './Icons'
+import { BarsIcon } from './Icons';
 
 export default function Topbar({ onMenuClick }) {
     return (

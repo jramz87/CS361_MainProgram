@@ -1,7 +1,7 @@
-import { Link, useLocation } from 'react-router-dom'
-import { XMarkIcon } from './Icons'
-import { navigation } from '../config/navigation'
-import logo from '../assets/Canva_Design.png'
+import { Link, useLocation } from 'react-router-dom';
+import { XMarkIcon } from './Icons';
+import { navigation } from '../config/navigation';
+import logo from '../assets/Canva_Design.png';
 
 export default function Sidebar({ isOpen, onClose }) {
     const location = useLocation()
