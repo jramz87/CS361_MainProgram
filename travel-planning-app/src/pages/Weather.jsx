@@ -23,14 +23,14 @@ export default function Weather() {
             </h1>
             
             {/* API Usage Notice */}
-            <div className="mb-4 p-4 rounded-lg border" style={{ backgroundColor: '#FFF3CD', borderColor: '#FFE082' }}>
+            <div className="mb-4 p-4 rounded-lg border" style={{ backgroundColor: '#FED9B7', borderColor: '#F07167' }}>
                 <div className="flex items-center mb-2">
                     <span className="text-lg mr-2">💡</span>
-                    <span className="font-medium text-sm" style={{ color: '#F57C00' }}>
+                    <span className="font-medium text-sm" style={{ color: '#0081A7' }}>
                         API Usage Notice
                     </span>
                 </div>
-                <p className="text-xs" style={{ color: '#F57C00' }}>
+                <p className="text-xs" style={{ color: '#0081A7' }}>
                     Each daily forecast uses 1 API call (~75 free queries per day). 
                     {days > 0 && (
                         <span className="font-medium">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getAIRecommendations } from '../services/genAIService';
+import { exploreDestination } from '../services/activityAPI';
 
 export default function Activities() {
     const [destination, setDestination] = useState('');
@@ -33,10 +33,9 @@ export default function Activities() {
         setError(null);
 
         try {
-            // Create a simple weather-less request for destination exploration
             const explorationData = {
                 location: destination,
-                days: [] // Empty for general destination exploration
+                days: []
             };
 
             const explorationPreferences = {
@@ -45,7 +44,7 @@ export default function Activities() {
                 interests: ['general exploration', 'popular attractions', 'local culture']
             };
 
-            const result = await getAIRecommendations(explorationData, explorationPreferences);
+            const result = await exploreDestination(explorationData, explorationPreferences);
             setRecommendations(result);
 
         } catch (err) {
@@ -63,69 +62,65 @@ export default function Activities() {
     };
 
     return (
-        <div className="p-6" style={{ backgroundColor: '#FDFCDC', minHeight: '100vh' }}>
-            <div className="max-w-4xl mx-auto">
-                <h1 className="text-3xl font-bold mb-6" style={{ color: '#0081A7' }}>
-                    Activity Suggestions
-                </h1>
-                <p className="mb-8" style={{ color: '#F07167' }}>
-                    Explore activities and attractions for any destination. Get AI-powered suggestions for what to do and see.
+        <div className="p-6">
+            <h1 className="text-3xl font-bold mb-6" style={{ color: '#0081A7' }}>
+                Activity Suggestions
+            </h1>
+            
+            {/* API Usage Notice */}
+            <div className="mb-4 p-4 rounded-lg border" style={{ backgroundColor: '#FED9B7', borderColor: '#F07167' }}>
+                <div className="flex items-center mb-2">
+                    <span className="font-medium text-sm" style={{ color: '#0081A7' }}>
+                        API Usage Notice
+                    </span>
+                </div>
+                <p className="text-xs" style={{ color: '#0081A7' }}>
+                    Each destination exploration uses 1 AI query (~60 free queries per day). Please allow up to 30 seconds for a response to be generated.
                 </p>
+            </div>
 
-                {/* Simple Exploration Form */}
-                <div className="mb-8 p-6 rounded-lg" style={{ backgroundColor: '#FFF', border: '1px solid #00AFB9' }}>
-                    <h2 className="text-xl font-bold mb-4" style={{ color: '#0081A7' }}>
-                        Explore a Destination
-                    </h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium mb-2" style={{ color: '#0081A7' }}>
-                                Destination *
-                            </label>
-                            <input
-                                type="text"
-                                value={destination}
-                                onChange={(e) => setDestination(e.target.value)}
-                                onKeyPress={handleKeyPress}
-                                placeholder="e.g., Paris, Tokyo, New York City, Bali..."
-                                className="w-full p-3 rounded-md border"
-                                style={{ 
-                                    backgroundColor: '#FDFCDC',
-                                    borderColor: '#00AFB9',
-                                    color: '#0081A7'
-                                }}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-2" style={{ color: '#0081A7' }}>
-                                Time of Year (Optional)
-                            </label>
-                            <select
-                                value={timeOfYear}
-                                onChange={(e) => setTimeOfYear(e.target.value)}
-                                className="w-full p-3 rounded-md border"
-                                style={{ 
-                                    backgroundColor: '#FDFCDC',
-                                    borderColor: '#00AFB9',
-                                    color: '#0081A7'
-                                }}
-                            >
-                                <option value="">Any time</option>
-                                {monthOptions.map(month => (
-                                    <option key={month.value} value={month.value}>
-                                        {month.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+            {/* Main Form */}
+            <div className="mb-6 p-6 rounded-lg" style={{ backgroundColor: '#FDFCDC' }}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium mb-2" style={{ color: '#0081A7' }}>
+                            Destination
+                        </label>
+                        <input
+                            type="text"
+                            value={destination}
+                            onChange={(e) => setDestination(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            placeholder="Enter city or location"
+                            className="w-full p-3 rounded-md border"
+                            style={{ borderColor: '#00AFB9' }}
+                        />
                     </div>
-
+                    <div>
+                        <label className="block text-sm font-medium mb-2" style={{ color: '#0081A7' }}>
+                            Time of Year (Optional)
+                        </label>
+                        <select
+                            value={timeOfYear}
+                            onChange={(e) => setTimeOfYear(e.target.value)}
+                            className="w-full p-3 rounded-md border"
+                            style={{ borderColor: '#00AFB9' }}
+                        >
+                            <option value="">Any time</option>
+                            {monthOptions.map(month => (
+                                <option key={month.value} value={month.value}>
+                                    {month.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+                
+                <div className="mt-4">
                     <button
                         onClick={exploreActivities}
                         disabled={!destination || loading}
-                        className="w-full md:w-auto px-8 py-3 rounded-md text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-2 rounded-md text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ backgroundColor: '#00AFB9' }}
                     >
                         {loading ? (
@@ -138,88 +133,77 @@ export default function Activities() {
                         )}
                     </button>
                 </div>
+            </div>
 
-                {/* Error Display */}
-                {error && (
-                    <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#FFF3CD', border: '1px solid #FFE082' }}>
-                        <p style={{ color: '#F57C00' }}>
-                            ⚠️ {error}
-                        </p>
-                    </div>
-                )}
+            {/* Error Display */}
+            {error && (
+                <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #F07167' }}>
+                    <p style={{ color: '#0081A7' }}>
+                        ⚠️ {error}
+                    </p>
+                </div>
+            )}
 
-                {/* Recommendations Display */}
-                {recommendations && (
-                    <div className="space-y-6">
-                        {/* Main Recommendations */}
-                        <div className="p-6 rounded-lg" style={{ backgroundColor: '#FFF', border: '1px solid #00AFB9' }}>
-                            <h2 className="text-2xl font-bold mb-4" style={{ color: '#0081A7' }}>
-                                Activities in {destination}
-                                {timeOfYear && <span className="text-lg font-normal"> • {timeOfYear.charAt(0).toUpperCase() + timeOfYear.slice(1)}</span>}
-                            </h2>
-                            
-                            {/* General Tips */}
-                            {recommendations.recommendations?.generalTips && (
-                                <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#E8F5E8' }}>
-                                    <h3 className="font-bold mb-3" style={{ color: '#2E7D32' }}>
-                                        Top Recommendations
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                        {recommendations.recommendations.generalTips.map((tip, index) => (
-                                            <div key={index} className="text-sm" style={{ color: '#2E7D32' }}>
-                                                • {tip}
-                                            </div>
-                                        ))}
+            {/* Results Display */}
+            {recommendations && (
+                <div className="p-6 rounded-lg" style={{ backgroundColor: '#FDFCDC' }}>
+                    <h3 className="text-xl font-bold mb-4" style={{ color: '#0081A7' }}>
+                        Activities in {destination}
+                        {timeOfYear && <span className="text-lg font-normal"> • {timeOfYear.charAt(0).toUpperCase() + timeOfYear.slice(1)}</span>}
+                    </h3>
+                    
+                    {/* General Tips */}
+                    {recommendations.recommendations?.generalTips && (
+                        <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #00AFB9' }}>
+                            <h4 className="font-bold mb-3" style={{ color: '#0081A7' }}>
+                                Top Recommendations
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {recommendations.recommendations.generalTips.map((tip, index) => (
+                                    <div key={index} className="text-sm" style={{ color: '#0081A7' }}>
+                                        • {tip}
                                     </div>
-                                </div>
-                            )}
-
-                            {/* Raw AI Response for Destination Exploration */}
-                            {recommendations.rawResponse && (
-                                <div className="prose max-w-none">
-                                    <div className="text-sm whitespace-pre-wrap" style={{ color: '#0081A7', lineHeight: '1.6' }}>
-                                        {recommendations.rawResponse}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Itinerary Creation Suggestion */}
-                        <div className="p-6 rounded-lg" style={{ backgroundColor: '#FFF3E0', border: '2px solid #FF9800' }}>
-                            <div className="flex items-start">
-                                <div>
-                                    <h3 className="text-xl font-bold mb-2" style={{ color: '#F57C00' }}>
-                                        Want a Detailed Itinerary?
-                                    </h3>
-                                    <p className="mb-4" style={{ color: '#F57C00' }}>
-                                        For personalized day-by-day recommendations based on specific client preferences, weather forecasts, and travel dates, create a custom itinerary.
-                                    </p>
-                                </div>
+                                ))}
                             </div>
                         </div>
+                    )}
 
-                        {/* API Usage Info */}
-                        <div className="p-4 rounded-lg text-center" style={{ backgroundColor: '#F8F9FA', border: '1px solid #dee2e6' }}>
-                            <p className="text-sm" style={{ color: '#6c757d' }}>
-                                💡 This exploration uses 1 AI query. More detailed itineraries with weather data use additional queries.
-                            </p>
+                    {/* Raw AI Response */}
+                    {recommendations.rawResponse && (
+                        <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #00AFB9' }}>
+                            <h4 className="font-medium mb-2" style={{ color: '#0081A7' }}>
+                                Detailed Recommendations
+                            </h4>
+                            <div className="text-sm whitespace-pre-wrap" style={{ color: '#0081A7', lineHeight: '1.6' }}>
+                                {recommendations.rawResponse}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Getting Started Helper */}
-                {!recommendations && !loading && !error && (
-                    <div className="p-6 rounded-lg text-center" style={{ backgroundColor: '#E3F2FD', border: '1px solid #2196F3' }}>
-                        <div className="text-6xl mb-4">🗺️</div>
-                        <h3 className="text-xl font-bold mb-2" style={{ color: '#1976D2' }}>
-                            Discover What to Do Anywhere
-                        </h3>
-                        <p style={{ color: '#1976D2' }}>
-                            Enter any destination to get AI-powered activity suggestions. Perfect for initial trip planning and client discussions.
+                    {/* Itinerary Suggestion */}
+                    <div className="p-4 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #00AFB9' }}>
+                        <h4 className="font-bold mb-2" style={{ color: '#0081A7' }}>
+                            Want a Detailed Itinerary?
+                        </h4>
+                        <p className="text-sm" style={{ color: '#0081A7' }}>
+                            For personalized day-by-day recommendations based on specific client preferences, weather forecasts, and travel dates, create a custom itinerary in the planning section.
                         </p>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
+
+            {/* Getting Started Helper */}
+            {!recommendations && !loading && !error && (
+                <div className="p-6 rounded-lg text-center" style={{ backgroundColor: '#FDFCDC' }}>
+                    <div className="text-6xl mb-4">🗺️</div>
+                    <h3 className="text-xl font-bold mb-2" style={{ color: '#0081A7' }}>
+                        Discover What to Do Anywhere
+                    </h3>
+                    <p style={{ color: '#F07167' }}>
+                        Enter any destination to get AI-powered activity suggestions. Perfect for initial trip planning and client discussions.
+                    </p>
+                </div>
+            )}
         </div>
     );
 }

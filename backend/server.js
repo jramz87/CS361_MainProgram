@@ -46,15 +46,15 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV || 'development',
         services: {
-        weather: !!VISUAL_CROSSING_API_KEY ? 'Available' : 'Not configured',
-        ai: !!process.env.OPENAI_API_KEY ? 'Available' : 'Not configured'
+            weather: !!VISUAL_CROSSING_API_KEY ? 'Available' : 'Not configured',
+            ai: !!process.env.OPENAI_API_KEY ? 'Available' : 'Not configured'
         },
         cors: {
-        allowedOrigins: [
-            'http://localhost:3000',
-            'https://your-frontend-domain.railway.app',
-            process.env.FRONTEND_URL
-        ].filter(Boolean)
+            allowedOrigins: [
+                'http://localhost:3000',
+                'https://cs361mainprogram-production.up.railway.app/',
+                process.env.FRONTEND_URL
+            ].filter(Boolean)
         }
     };
     res.json(status);
@@ -66,55 +66,55 @@ app.get('/api/weather/forecast', async (req, res) => {
         const { location, startDate, endDate } = req.query;
         
         if (!location || !startDate || !endDate) {
-        return res.status(400).json({ 
-            error: 'Missing required parameters: location, startDate, endDate' 
-        });
+            return res.status(400).json({ 
+                error: 'Missing required parameters: location, startDate, endDate' 
+            });
         }
 
-    if (!VISUAL_CROSSING_API_KEY) {
-      console.error('Visual Crossing API key not configured');
-      return res.status(500).json({ 
-        error: 'Weather service not configured' 
-      });
-    }
-
-    const url = `${WEATHER_BASE_URL}/${encodeURIComponent(location)}/${startDate}/${endDate}`;
-    
-    const params = {
-        key: VISUAL_CROSSING_API_KEY,
-      unitGroup: 'us',
-      include: 'days',
-      elements: 'datetime,tempmax,tempmin,temp,conditions,description,humidity,windspeed,visibility,uvindex,icon'
-    };
-
-    console.log(`Fetching weather for: ${location} (${startDate} to ${endDate})`);
-
-    // Add timeout and better error handling
-    const response = await axios.get(url, { 
-        params,
-        timeout: 10000, // 10 second timeout
-        headers: {
-            'User-Agent': 'Weather-App/1.0',
-            'Accept': 'application/json'
+        if (!VISUAL_CROSSING_API_KEY) {
+            console.error('Visual Crossing API key not configured');
+            return res.status(500).json({ 
+                error: 'Weather service not configured' 
+            });
         }
+
+        const url = `${WEATHER_BASE_URL}/${encodeURIComponent(location)}/${startDate}/${endDate}`;
+        
+        const params = {
+            key: VISUAL_CROSSING_API_KEY,
+            unitGroup: 'us',
+            include: 'days',
+            elements: 'datetime,tempmax,tempmin,temp,conditions,description,humidity,windspeed,visibility,uvindex,icon'
+        };
+
+        console.log(`Fetching weather for: ${location} (${startDate} to ${endDate})`);
+
+        // Add timeout and better error handling
+        const response = await axios.get(url, { 
+            params,
+            timeout: 10000, // 10 second timeout
+            headers: {
+                'User-Agent': 'Weather-App/1.0',
+                'Accept': 'application/json'
+            }
         });
         
         // Transform data for frontend
         const transformedData = {
-        ...response.data,
-        days: response.data.days?.map(day => ({
-            date: day.datetime,
-            temp: day.temp,
-            tempmax: day.tempmax,
-            tempmin: day.tempmin,
-            conditions: day.conditions,
-            description: day.description,
-            humidity: day.humidity,
-            windspeed: day.windspeed,
-            visibility: day.visibility,
-            uvindex: day.uvindex,
-            icon: day.icon
-        }))
+            ...response.data,
+            days: response.data.days?.map(day => ({
+                date: day.datetime,
+                temp: day.temp,
+                tempmax: day.tempmax,
+                tempmin: day.tempmin,
+                conditions: day.conditions,
+                description: day.description,
+                humidity: day.humidity,
+                windspeed: day.windspeed,
+                visibility: day.visibility,
+                uvindex: day.uvindex,
+                icon: day.icon
+            }))
         };
 
         console.log(`Weather data fetched successfully for ${location}`);
@@ -122,34 +122,34 @@ app.get('/api/weather/forecast', async (req, res) => {
 
     } catch (error) {
         console.error('Weather API Error:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-        url: error.config?.url
+            message: error.message,
+            status: error.response?.status,
+            data: error.response?.data,
+            url: error.config?.url
         });
         
         if (error.code === 'ECONNABORTED') {
-        return res.status(408).json({ error: 'Weather service timeout. Please try again.' });
+            return res.status(408).json({ error: 'Weather service timeout. Please try again.' });
         }
         
         if (error.response) {
-        const status = error.response.status;
-        switch (status) {
-            case 401:
-            return res.status(500).json({ error: 'Weather service authentication failed' });
-            case 429:
-            return res.status(429).json({ error: 'Weather service rate limit exceeded. Please try again later.' });
-            case 400:
-            return res.status(400).json({ error: 'Invalid location or date parameters' });
-            case 404:
-            return res.status(404).json({ error: 'Location not found. Please check the location name.' });
-            default:
-            return res.status(500).json({ error: `Weather service error (${status})` });
-        }
+            const status = error.response.status;
+            switch (status) {
+                case 401:
+                    return res.status(500).json({ error: 'Weather service authentication failed' });
+                case 429:
+                    return res.status(429).json({ error: 'Weather service rate limit exceeded. Please try again later.' });
+                case 400:
+                    return res.status(400).json({ error: 'Invalid location or date parameters' });
+                case 404:
+                    return res.status(404).json({ error: 'Location not found. Please check the location name.' });
+                default:
+                    return res.status(500).json({ error: `Weather service error (${status})` });
+            }
         }
 
         if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
-        return res.status(503).json({ error: 'Weather service is temporarily unavailable' });
+            return res.status(503).json({ error: 'Weather service is temporarily unavailable' });
         }
 
         res.status(500).json({ error: 'Unable to fetch weather data' });
@@ -162,25 +162,25 @@ app.get('/api/weather/current', async (req, res) => {
         const { location } = req.query;
         
         if (!location) {
-        return res.status(400).json({ error: 'Location parameter is required' });
+            return res.status(400).json({ error: 'Location parameter is required' });
         }
 
         const url = `${WEATHER_BASE_URL}/${encodeURIComponent(location)}/today`;
         
         const params = {
-        key: VISUAL_CROSSING_API_KEY,
-        unitGroup: 'us',
-        include: 'current',
-        elements: 'datetime,temp,conditions,description,humidity,windspeed,visibility,uvindex,icon'
+            key: VISUAL_CROSSING_API_KEY,
+            unitGroup: 'us',
+            include: 'current',
+            elements: 'datetime,temp,conditions,description,humidity,windspeed,visibility,uvindex,icon'
         };
 
         const response = await axios.get(url, { 
-        params,
-        timeout: 10000,
-        headers: {
-            'User-Agent': 'Weather-App/1.0',
-            'Accept': 'application/json'
-        }
+            params,
+            timeout: 10000,
+            headers: {
+                'User-Agent': 'Weather-App/1.0',
+                'Accept': 'application/json'
+            }
         });
         
         res.json(response.data);
@@ -191,24 +191,24 @@ app.get('/api/weather/current', async (req, res) => {
     }
 });
 
-// AI Recommendations endpoint
+// AI Recommendations endpoint (for complex weather-based itineraries)
 app.post('/api/weather/ai-recommendations', async (req, res) => {
     try {
         const { weatherData, userPreferences } = req.body;
         
         if (!weatherData) {
-        return res.status(400).json({ 
-            error: 'Weather data is required',
-            message: 'Please provide weather data'
-        });
+            return res.status(400).json({ 
+                error: 'Weather data is required',
+                message: 'Please provide weather data'
+            });
         }
 
         const result = await genAIService.getAIRecommendations(weatherData, userPreferences);
         
         res.json({
-        success: true,
-        data: result,
-        timestamp: new Date().toISOString()
+            success: true,
+            data: result,
+            timestamp: new Date().toISOString()
         });
 
     } catch (error) {
@@ -216,44 +216,131 @@ app.post('/api/weather/ai-recommendations', async (req, res) => {
         
         // Handle specific AI API errors
         switch (error.message) {
-        case 'AI_API_NOT_CONFIGURED':
-            return res.status(500).json({
-            error: 'AI service not configured',
-            message: 'AI recommendation service is not available'
-            });
+            case 'AI_API_NOT_CONFIGURED':
+                return res.status(500).json({
+                    error: 'AI service not configured',
+                    message: 'AI recommendation service is not available'
+                });
+            
+            case 'AI_RATE_LIMIT_EXCEEDED':
+                return res.status(429).json({
+                    error: 'AI rate limit exceeded',
+                    message: 'Too many AI requests. Please try again later.'
+                });
+            
+            case 'AI_API_AUTH_ERROR':
+                return res.status(500).json({
+                    error: 'AI service authentication failed',
+                    message: 'AI service is temporarily unavailable'
+                });
+            
+            default:
+                // Provide fallback recommendations
+                try {
+                    const fallbackResult = genAIService.getFallbackRecommendations(req.body.weatherData);
+                    return res.json({
+                        success: true,
+                        data: {
+                            success: false,
+                            recommendations: fallbackResult,
+                            fallback: true,
+                            error: 'AI service unavailable, showing basic recommendations'
+                        },
+                        timestamp: new Date().toISOString()
+                    });
+                } catch (fallbackError) {
+                    return res.status(500).json({
+                        error: 'Unable to generate recommendations',
+                        message: 'Both AI and fallback services failed'
+                    });
+                }
+        }
+    }
+});
+
+// Destination Exploration endpoint (for simple destination exploration)
+app.post('/api/explore-destination', async (req, res) => {
+    try {
+        const { destination, timeOfYear } = req.body;
         
-        case 'AI_RATE_LIMIT_EXCEEDED':
-            return res.status(429).json({
-            error: 'AI rate limit exceeded',
-            message: 'Too many AI requests. Please try again later.'
+        if (!destination) {
+            return res.status(400).json({ 
+                error: 'Destination is required',
+                message: 'Please provide a destination to explore'
             });
+        }
+
+        console.log(`Exploring destination: ${destination}${timeOfYear ? ` in ${timeOfYear}` : ''}`);
+
+        // Create exploration data
+        const explorationData = {
+            location: destination,
+            days: [] // Empty for general destination exploration
+        };
+
+        const explorationPreferences = {
+            timeOfYear: timeOfYear,
+            explorationType: 'destination-overview'
+        };
+
+        const result = await genAIService.getAIRecommendations(explorationData, explorationPreferences);
         
-        case 'AI_API_AUTH_ERROR':
-            return res.status(500).json({
-            error: 'AI service authentication failed',
-            message: 'AI service is temporarily unavailable'
-            });
+        console.log(`Destination exploration completed for ${destination}`);
         
-        default:
-            // Provide fallback recommendations
-            try {
-            const fallbackResult = genAIService.getFallbackRecommendations(req.body.weatherData);
-            return res.json({
-                success: true,
-                data: {
-                success: false,
-                recommendations: fallbackResult,
-                fallback: true,
-                error: 'AI service unavailable, showing basic recommendations'
-                },
-                timestamp: new Date().toISOString()
-            });
-            } catch (fallbackError) {
-            return res.status(500).json({
-                error: 'Unable to generate recommendations',
-                message: 'Both AI and fallback services failed'
-            });
-            }
+        res.json({
+            success: true,
+            data: result,
+            timestamp: new Date().toISOString(),
+            destination: destination,
+            timeOfYear: timeOfYear || null
+        });
+
+    } catch (error) {
+        console.error('Destination Exploration Error:', error.message);
+        
+        // Handle specific AI API errors
+        switch (error.message) {
+            case 'AI_API_NOT_CONFIGURED':
+                return res.status(500).json({
+                    error: 'AI service not configured',
+                    message: 'AI exploration service is not available'
+                });
+            
+            case 'AI_RATE_LIMIT_EXCEEDED':
+                return res.status(429).json({
+                    error: 'AI rate limit exceeded',
+                    message: 'Too many requests. Please try again later.'
+                });
+            
+            case 'AI_API_AUTH_ERROR':
+                return res.status(500).json({
+                    error: 'AI service authentication failed',
+                    message: 'AI service is temporarily unavailable'
+                });
+            
+            default:
+                // Provide fallback recommendations
+                return res.json({
+                    success: true,
+                    data: {
+                        success: false,
+                        recommendations: {
+                            generalTips: [
+                                `${req.body.destination} is a wonderful destination to explore`,
+                                'Visit popular attractions and landmarks',
+                                'Try local cuisine and specialties',
+                                'Explore different neighborhoods',
+                                'Consider guided tours for cultural insights'
+                            ],
+                            fallback: true
+                        },
+                        rawResponse: `AI service temporarily unavailable. ${req.body.destination} offers many attractions, cultural experiences, and local cuisine worth exploring.`,
+                        error: 'AI service unavailable, showing basic recommendations'
+                    },
+                    timestamp: new Date().toISOString(),
+                    destination: req.body.destination,
+                    timeOfYear: req.body.timeOfYear || null
+                });
         }
     }
 });
@@ -328,11 +415,12 @@ app.use('*', (req, res) => {
         error: 'Route not found',
         message: `Route ${req.method} ${req.originalUrl} not found`,
         availableRoutes: [
-        'GET /health',
-        'GET /api/weather/forecast',
-        'GET /api/weather/current',
-        'POST /api/weather/ai-recommendations',
-        'GET /api/clients'
+            'GET /health',
+            'GET /api/weather/forecast',
+            'GET /api/weather/current',
+            'POST /api/weather/ai-recommendations',
+            'POST /api/explore-destination',
+            'GET /api/clients'
         ]
     });
 });
