@@ -15,7 +15,7 @@ const features = [
     },
     {
         name: 'Client Management',
-        description: 'Easily store and organize client profiles, preferences, and travel history for better service delivery.',
+        description: 'Easily store and organize client profiles and travel preferences for workflow efficiency.',
         href: '/clients',
         icon: UsersIcon,
     },
