@@ -1,7 +1,12 @@
-import { useState, useEffect } from 'react';
-import { ChevronDownIcon, CalendarIcon, MapIcon, CloudIcon, PaperAirplaneIcon } from '../components/Icons';
+import { useState } from 'react';
+import { ChevronDownIcon, CalendarIcon, MapIcon, CloudIcon, PaperAirplaneIcon, TrashIcon } from '../components/Icons';
 
 export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
+    const [clients] = useState([
+        { id: 1, firstName: 'John', lastName: 'Doe' },
+        { id: 2, firstName: 'Jane', lastName: 'Smith' }
+    ]);
+
     const [formData, setFormData] = useState({
         // Trip Basic Info
         tripTitle: itinerary?.tripTitle || '',
@@ -52,21 +57,6 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
         notes: itinerary?.notes || ''
     });
 
-    // make this dynamic eventually
-    const [clients] = useState([
-        { id: 1, firstName: 'John', lastName: 'Doe' },
-        { id: 2, firstName: 'Jane', lastName: 'Smith' }
-    ]);
-
-    const [selectedClient, setSelectedClient] = useState(null);
-
-    useEffect(() => {
-        if (itinerary && itinerary.clientId && clients.length > 0) {
-            const client = clients.find(c => c.id === parseInt(itinerary.clientId));
-            setSelectedClient(client || null);
-        }
-    }, [itinerary?.clientId, clients]);
-
     const tripTypes = [
         'Leisure', 'Business', 'Adventure', 'Cultural', 'Romantic', 'Family', 'Group'
     ];
@@ -80,8 +70,6 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
     };
 
     const handleClientSelect = (clientId) => {
-        const client = clients.find(c => c.id === parseInt(clientId));
-        setSelectedClient(client);
         setFormData(prev => ({
             ...prev,
             clientId: clientId
@@ -99,12 +87,31 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
         }));
     };
 
+    const removeDayFromItinerary = (dayIndex) => {
+        if (formData.dailyItinerary.length > 1) { // Keep at least one day
+            setFormData(prev => ({
+                ...prev,
+                dailyItinerary: prev.dailyItinerary.filter((_, index) => index !== dayIndex)
+            }));
+        }
+    };
+
     const addActivityToDay = (dayIndex) => {
         setFormData(prev => {
             const newItinerary = [...prev.dailyItinerary];
             newItinerary[dayIndex].activities.push({
                 time: '', activity: '', location: '', notes: ''
             });
+            return { ...prev, dailyItinerary: newItinerary };
+        });
+    };
+
+    const removeActivityFromDay = (dayIndex, activityIndex) => {
+        setFormData(prev => {
+            const newItinerary = [...prev.dailyItinerary];
+            if (newItinerary[dayIndex].activities.length > 1) { // Keep at least one activity
+                newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.filter((_, index) => index !== activityIndex);
+            }
             return { ...prev, dailyItinerary: newItinerary };
         });
     };
@@ -153,7 +160,7 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-8">
                     <h1 className="text-4xl font-bold tracking-tight" style={{ color: '#0081A7' }}>
-                        {itinerary ? 'Edit Travel Itinerary' : 'Create New Travel Itinerary'}
+                        {itinerary ? 'Edit Travel Itinerary' : 'Create Travel Itinerary'}
                     </h1>
                     <p className="mt-2 text-lg" style={{ color: '#F07167' }}>
                         Create detailed travel itineraries with weather and activity planning
@@ -545,9 +552,22 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
 
                         {formData.dailyItinerary.map((day, dayIndex) => (
                             <div key={dayIndex} className="mb-8 p-4 rounded-lg border-2" style={{ borderColor: '#FED9B7', backgroundColor: '#FED9B7' }}>
-                                <h3 className="text-lg font-bold mb-4" style={{ color: '#0081A7' }}>
-                                    Day {dayIndex + 1}
-                                </h3>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-bold" style={{ color: '#0081A7' }}>
+                                        Day {dayIndex + 1}
+                                    </h3>
+                                    {formData.dailyItinerary.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => removeDayFromItinerary(dayIndex)}
+                                            className="p-2 rounded-full hover:bg-opacity-80 transition-colors"
+                                            style={{ backgroundColor: '#F07167', color: 'white' }}
+                                            title="Remove this day"
+                                        >
+                                            <TrashIcon />
+                                        </button>
+                                    )}
+                                </div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                     <div>
@@ -650,8 +670,21 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
                                     </div>
                                     
                                     {day.activities.map((activity, activityIndex) => (
-                                        <div key={activityIndex} className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#FDFCDC' }}>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div key={activityIndex} className="mb-4 p-3 rounded-lg relative" style={{ backgroundColor: '#FDFCDC' }}>
+                                            {/* Delete button for activity */}
+                                            {day.activities.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeActivityFromDay(dayIndex, activityIndex)}
+                                                    className="absolute top-2 right-2 p-1 rounded-full hover:bg-opacity-80 transition-colors"
+                                                    style={{ backgroundColor: '#F07167', color: 'white' }}
+                                                    title="Remove this activity"
+                                                >
+                                                    <TrashIcon />
+                                                </button>
+                                            )}
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-8">
                                                 <div>
                                                     <label className="block text-sm font-medium mb-1" style={{ color: '#0081A7' }}>
                                                         Time
@@ -843,4 +876,4 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
             </div>
         </div>
     );
-    }
+}
