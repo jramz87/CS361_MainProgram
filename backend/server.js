@@ -14,11 +14,13 @@ config();
 
 const app = express();
 
+// Trust proxy configuration
 if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1); // Trust first proxy (Railway)
 } else {
     app.set('trust proxy', false); // Don't trust proxy in development
 }
+
 const PORT = process.env.PORT || 3001;
 
 // CORS configuration
@@ -69,20 +71,6 @@ app.get('/health', (req, res) => {
         }
     };
     res.json(status);
-});
-
-app.use(express.static(path.join(__dirname, '../travel-planning-app/dist')));
-
-app.get('*', (req, res) => {
-  // Don't serve index.html for API routes
-    if (req.path.startsWith('/api/') || req.path.startsWith('/health')) {
-        return res.status(404).json({ 
-        error: 'API route not found',
-        message: `Route ${req.method} ${req.originalUrl} not found`
-        });
-    }
-    
-    res.sendFile(path.join(__dirname, '../travel-planning-app/dist/index.html'));
 });
 
 // Weather forecast endpoint with better error handling
@@ -166,8 +154,6 @@ app.get('/api/weather/forecast', async (req, res) => {
                     return res.status(429).json({ error: 'Weather service rate limit exceeded. Please try again later.' });
                 case 400:
                     return res.status(400).json({ error: 'Invalid location or date parameters' });
-                //case 404:
-                //    return res.status(404).json({ error: 'Location not found. Please check the location name.' });
                 default:
                     return res.status(500).json({ error: `Weather service error (${status})` });
             }
@@ -370,36 +356,57 @@ app.post('/api/explore-destination', async (req, res) => {
     }
 });
 
-// Mock clients endpoint (replace with actual database later)
-let clients = [
-    {
-        id: '1',
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@email.com',
-        budget: '3500-4500',
-        activities: ['Beach and water', 'Adventure activities'],
-        preferences: 'Loves outdoor activities and trying local cuisine',
-        departureCity: 'Oklahoma City (OKC)'
-    },
-    {
-        id: '2',
-        firstName: 'Jane',
-        lastName: 'Smith',
-        email: 'jane.smith@email.com',
-        budget: '5000-6500',
-        activities: ['Arts and theater', 'Food Tour'],
-        preferences: 'Interested in cultural experiences and fine dining',
-        departureCity: 'Dallas (DFW)'
-    }
-];
-
 // Clients CRUD endpoints
 app.get('/api/clients', (req, res) => {
+    const clients = [
+        {
+            id: '1',
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john.doe@email.com',
+            budget: '3500-4500',
+            activities: ['Beach and water', 'Adventure activities'],
+            preferences: 'Loves outdoor activities and trying local cuisine',
+            departureCity: 'Oklahoma City (OKC)'
+        },
+        {
+            id: '2',
+            firstName: 'Jane',
+            lastName: 'Smith',
+            email: 'jane.smith@email.com',
+            budget: '5000-6500',
+            activities: ['Arts and theater', 'Food Tour'],
+            preferences: 'Interested in cultural experiences and fine dining',
+            departureCity: 'Dallas (DFW)'
+        }
+    ];
     res.json(clients);
 });
 
 app.get('/api/clients/:id', (req, res) => {
+    const clients = [
+        {
+            id: '1',
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john.doe@email.com',
+            budget: '3500-4500',
+            activities: ['Beach and water', 'Adventure activities'],
+            preferences: 'Loves outdoor activities and trying local cuisine',
+            departureCity: 'Oklahoma City (OKC)'
+        },
+        {
+            id: '2',
+            firstName: 'Jane',
+            lastName: 'Smith',
+            email: 'jane.smith@email.com',
+            budget: '5000-6500',
+            activities: ['Arts and theater', 'Food Tour'],
+            preferences: 'Interested in cultural experiences and fine dining',
+            departureCity: 'Dallas (DFW)'
+        }
+    ];
+    
     const client = clients.find(c => c.id === req.params.id);
     if (!client) {
         return res.status(404).json({ error: 'Client not found' });
@@ -412,42 +419,35 @@ app.post('/api/clients', (req, res) => {
         id: Date.now().toString(),
         ...req.body
     };
-    clients.push(newClient);
+    // In a real app, save to database here
     res.status(201).json(newClient);
 });
 
 app.put('/api/clients/:id', (req, res) => {
-    const index = clients.findIndex(c => c.id === req.params.id);
-    if (index === -1) {
-        return res.status(404).json({ error: 'Client not found' });
-    }
-    clients[index] = { ...clients[index], ...req.body };
-    res.json(clients[index]);
+    // In a real app, update in database here
+    const updatedClient = { id: req.params.id, ...req.body };
+    res.json(updatedClient);
 });
 
 app.delete('/api/clients/:id', (req, res) => {
-    const index = clients.findIndex(c => c.id === req.params.id);
-    if (index === -1) {
-        return res.status(404).json({ error: 'Client not found' });
-    }
-    clients.splice(index, 1);
+    // In a real app, delete from database here
     res.json({ message: 'Client deleted' });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-    res.status(404).json({ 
-        error: 'Route not found',
-        message: `Route ${req.method} ${req.originalUrl} not found`,
-        availableRoutes: [
-            'GET /health',
-            'GET /api/weather/forecast',
-            'GET /api/weather/current',
-            'POST /api/weather/ai-recommendations',
-            'POST /api/explore-destination',
-            'GET /api/clients'
-        ]
-    });
+// Serve static files from React build (MOVED TO BOTTOM)
+app.use(express.static(path.join(__dirname, '../travel-planning-app/dist')));
+
+// Catch all handler for React routes (MOVED TO BOTTOM)
+app.get('*', (req, res) => {
+    // Don't serve index.html for API routes
+    if (req.path.startsWith('/api/') || req.path.startsWith('/health')) {
+        return res.status(404).json({ 
+            error: 'API route not found',
+            message: `Route ${req.method} ${req.originalUrl} not found`
+        });
+    }
+    
+    res.sendFile(path.join(__dirname, '../travel-planning-app/dist/index.html'));
 });
 
 // Global error handler
