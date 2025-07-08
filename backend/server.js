@@ -13,7 +13,12 @@ const __dirname = path.dirname(__filename);
 config();
 
 const app = express();
-app.set('trust proxy', true);
+
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1); // Trust first proxy (Railway)
+} else {
+    app.set('trust proxy', false); // Don't trust proxy in development
+}
 const PORT = process.env.PORT || 3001;
 
 // CORS configuration
