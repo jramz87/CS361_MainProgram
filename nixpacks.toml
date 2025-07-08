@@ -7,7 +7,7 @@ cmds = [
   "cd backend && npm install",
   "cd travel-planning-app && npm install",
   "cd travel-planning-app && npm run build",
-  "ls -la travel-planning-app/build"
+  "ls -la travel-planning-app/dist"
 ]
 
 [start]
