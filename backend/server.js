@@ -65,7 +65,7 @@ app.get('/health', (req, res) => {
     res.json(status);
 });
 
-app.use(express.static(path.join(__dirname, '../travel-planning-app/build')));
+app.use(express.static(path.join(__dirname, '../travel-planning-app/dist')));
 
 app.get('*', (req, res) => {
   // Don't serve index.html for API routes
@@ -76,7 +76,7 @@ app.get('*', (req, res) => {
         });
     }
     
-    res.sendFile(path.join(__dirname, '../travel-planning-app/build/index.html'));
+    res.sendFile(path.join(__dirname, '../travel-planning-app/dist/index.html'));
 });
 
 // Weather forecast endpoint with better error handling
