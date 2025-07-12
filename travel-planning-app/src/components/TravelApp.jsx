@@ -1,24 +1,26 @@
-// This component is used to set the site layout
+// Update your existing TravelApp component
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import Footer from './Footer';
 
 export default function TravelApp() {
     const [sidebarOpen, setSidebarOpen] = useState(false)
 
     return (
-        <div className="min-h-screen" style={{ backgroundColor: '#FDFCDC' }}>
-        <Sidebar 
-            isOpen={sidebarOpen} 
-            onClose={() => setSidebarOpen(false)}
-        />
-        <div className="lg:pl-72">
-            <Topbar onMenuClick={() => setSidebarOpen(true)} />
-            <main>
-            <Outlet />
-            </main>
-        </div>
+        <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#FDFCDC' }}>
+            <Sidebar 
+                isOpen={sidebarOpen} 
+                onClose={() => setSidebarOpen(false)}
+            />
+            <div className="lg:pl-72 flex flex-col min-h-screen">
+                <Topbar onMenuClick={() => setSidebarOpen(true)} />
+                <main className="flex-1">
+                    <Outlet />
+                </main>
+                <Footer />
+            </div>
         </div>
     )
 }

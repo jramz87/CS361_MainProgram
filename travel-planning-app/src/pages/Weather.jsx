@@ -34,7 +34,7 @@ export default function Weather() {
                     Each daily forecast uses 1 API call (~75 free queries per day). 
                     {days > 0 && (
                         <span className="font-medium">
-                            {' '}This {days}-day forecast will use 1 query.
+                            {' '}This {days}-day forecast will use {days} query/queries.
                         </span>
                     )}
                 </p>
