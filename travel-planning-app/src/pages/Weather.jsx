@@ -25,7 +25,6 @@ export default function Weather() {
             {/* API Usage Notice */}
             <div className="mb-4 p-4 rounded-lg border" style={{ backgroundColor: '#FED9B7', borderColor: '#F07167' }}>
                 <div className="flex items-center mb-2">
-                    <span className="text-lg mr-2">💡</span>
                     <span className="font-medium text-sm" style={{ color: '#0081A7' }}>
                         API Usage Notice
                     </span>

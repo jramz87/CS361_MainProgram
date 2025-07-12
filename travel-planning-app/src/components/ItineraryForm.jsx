@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ChevronDownIcon, CalendarIcon, MapIcon, CloudIcon, PaperAirplaneIcon, TrashIcon } from '../components/Icons';
+import { ChevronDownIcon, CalendarIcon, MapIcon, CloudIcon, PaperAirplaneIcon, TrashIcon, WeatherIcon } from '../components/Icons';
+import { getWeatherForecast } from '../services/weatherAPI';
 
 export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
     const [clients] = useState([
@@ -8,7 +9,6 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
     ]);
 
     const [formData, setFormData] = useState({
-        // Trip Basic Info
         tripTitle: itinerary?.tripTitle || '',
         clientId: itinerary?.clientId || '',
         destination: itinerary?.destination || '',
@@ -16,21 +16,15 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
         endDate: itinerary?.endDate || '',
         numberOfTravelers: itinerary?.numberOfTravelers || 1,
         tripType: itinerary?.tripType || '',
-        
-        // Flight Information
         departureAirport: itinerary?.departureAirport || '',
         arrivalAirport: itinerary?.arrivalAirport || '',
         outboundFlight: itinerary?.outboundFlight || '',
         returnFlight: itinerary?.returnFlight || '',
-        
-        // Accommodation
         hotelName: itinerary?.hotelName || '',
         hotelAddress: itinerary?.hotelAddress || '',
         checkInDate: itinerary?.checkInDate || '',
         checkOutDate: itinerary?.checkOutDate || '',
         roomType: itinerary?.roomType || '',
-        
-        // Daily Itinerary
         dailyItinerary: itinerary?.dailyItinerary || [
             {
                 date: '',
@@ -49,13 +43,14 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
                 ]
             }
         ],
-        
-        // Additional Info
         specialRequests: itinerary?.specialRequests || '',
         emergencyContacts: itinerary?.emergencyContacts || '',
         totalCost: itinerary?.totalCost || '',
         notes: itinerary?.notes || ''
     });
+
+    const [weatherLoading, setWeatherLoading] = useState(false);
+    const [automationErrors, setAutomationErrors] = useState({});
 
     const tripTypes = [
         'Leisure', 'Business', 'Adventure', 'Cultural', 'Romantic', 'Family', 'Group'
@@ -76,6 +71,55 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
         }));
     };
 
+    const fetchWeatherForAllDays = async () => {
+        if (!formData.destination || !formData.startDate || !formData.endDate) {
+            setAutomationErrors(prev => ({
+                ...prev,
+                weather: 'Please enter destination, start date, and end date first'
+            }));
+            return;
+        }
+
+        setWeatherLoading(true);
+        setAutomationErrors(prev => ({ ...prev, weather: null }));
+
+        try {
+            const weatherData = await getWeatherForecast(
+                formData.destination,
+                formData.startDate,
+                formData.endDate
+            );
+
+            if (weatherData && weatherData.days && weatherData.days.length > 0) {
+                setFormData(prev => ({
+                    ...prev,
+                    dailyItinerary: weatherData.days.map((day, index) => {
+                        const existingDay = prev.dailyItinerary[index] || {
+                            activities: [{ time: '', activity: '', location: '', notes: '' }]
+                        };
+                        
+                        return {
+                            ...existingDay,
+                            date: day.date || '',
+                            weather: {
+                                temperature: day.temp ? `${Math.round(day.temp)}°F` : '',
+                                conditions: day.conditions || '',
+                                precipitation: day.humidity ? `${Math.round(day.humidity)}%` : ''
+                            }
+                        };
+                    })
+                }));
+            }
+        } catch (error) {
+            setAutomationErrors(prev => ({
+                ...prev,
+                weather: `Failed to fetch weather: ${error.message}`
+            }));
+        } finally {
+            setWeatherLoading(false);
+        }
+    };
+
     const addDayToItinerary = () => {
         setFormData(prev => ({
             ...prev,
@@ -88,7 +132,7 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
     };
 
     const removeDayFromItinerary = (dayIndex) => {
-        if (formData.dailyItinerary.length > 1) { // Keep at least one day
+        if (formData.dailyItinerary.length > 1) {
             setFormData(prev => ({
                 ...prev,
                 dailyItinerary: prev.dailyItinerary.filter((_, index) => index !== dayIndex)
@@ -109,7 +153,7 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
     const removeActivityFromDay = (dayIndex, activityIndex) => {
         setFormData(prev => {
             const newItinerary = [...prev.dailyItinerary];
-            if (newItinerary[dayIndex].activities.length > 1) { // Keep at least one activity
+            if (newItinerary[dayIndex].activities.length > 1) {
                 newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.filter((_, index) => index !== activityIndex);
             }
             return { ...prev, dailyItinerary: newItinerary };
@@ -163,7 +207,7 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
                         {itinerary ? 'Edit Travel Itinerary' : 'Create Travel Itinerary'}
                     </h1>
                     <p className="mt-2 text-lg" style={{ color: '#F07167' }}>
-                        Create detailed travel itineraries with weather and activity planning
+                        Create detailed travel itineraries with automated weather forecasting
                     </p>
                 </div>
 
@@ -533,22 +577,47 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
                         </div>
                     </div>
 
-                    {/* Daily Itinerary */}
+                    {/* Daily Itinerary with Weather Automation */}
                     <div className="p-6 rounded-xl border-2 shadow-lg" style={{ borderColor: '#00AFB9', backgroundColor: '#FDFCDC' }}>
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-bold flex items-center gap-2" style={{ color: '#0081A7' }}>
                                 <CalendarIcon />
                                 Daily Itinerary
                             </h2>
-                            <button
-                                type="button"
-                                onClick={addDayToItinerary}
-                                className="px-4 py-2 rounded-md text-white font-semibold shadow-lg hover:opacity-90 transition-all"
-                                style={{ backgroundColor: '#00AFB9' }}
-                            >
-                                Add Day
-                            </button>
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={fetchWeatherForAllDays}
+                                    disabled={weatherLoading}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-md text-white font-semibold shadow-lg hover:opacity-90 transition-all disabled:opacity-50"
+                                    style={{ backgroundColor: '#00AFB9' }}
+                                >
+                                    {weatherLoading ? (
+                                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                                    ) : (
+                                        <WeatherIcon />
+                                    )}
+                                    Auto Populate Weather
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={addDayToItinerary}
+                                    className="px-4 py-2 rounded-md text-white font-semibold shadow-lg hover:opacity-90 transition-all"
+                                    style={{ backgroundColor: '#00AFB9' }}
+                                >
+                                    Add Day
+                                </button>
+                            </div>
                         </div>
+
+                        {/* Weather Error Display */}
+                        {automationErrors.weather && (
+                            <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #F07167' }}>
+                                <p className="text-sm" style={{ color: '#0081A7' }}>
+                                    ⚠️ {automationErrors.weather}
+                                </p>
+                            </div>
+                        )}
 
                         {formData.dailyItinerary.map((day, dayIndex) => (
                             <div key={dayIndex} className="mb-8 p-4 rounded-lg border-2" style={{ borderColor: '#FED9B7', backgroundColor: '#FED9B7' }}>
@@ -593,7 +662,7 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
                                 <div className="mb-4 p-4 rounded-lg" style={{ backgroundColor: '#FDFCDC' }}>
                                     <h4 className="text-md font-semibold mb-3 flex items-center gap-2" style={{ color: '#0081A7' }}>
                                         <CloudIcon />
-                                        Weather (Manual Entry)
+                                        Weather
                                     </h4>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div>

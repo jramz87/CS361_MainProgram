@@ -77,9 +77,6 @@ export default function WeatherDisplay({ location, startDate, endDate, temperatu
                     <span className="text-6xl">🌤️</span>
                 </div>
                 <p className="text-lg">Enter location and dates to see weather forecast</p>
-                <p className="text-sm mt-2 opacity-75">
-                    Get simple activity recommendations based on weather conditions
-                </p>
             </div>
         );
     }
@@ -91,7 +88,7 @@ export default function WeatherDisplay({ location, startDate, endDate, temperatu
                     Weather Forecast for {weather.resolvedAddress || location}
                 </h3>
                 <p className="text-sm opacity-75" style={{ color: '#0081A7' }}>
-                    Click on any day to see activity recommendations • Showing temperatures in °{temperatureUnit}
+                    Click on any day to detailed forecasts • Showing temperatures in °{temperatureUnit}
                 </p>
             </div>
             
