@@ -1,0 +1,30 @@
+[
+  {
+    "id": "1752882833769",
+    "firstName": "Jessica",
+    "lastName": "Ramirez",
+    "email": "jramz1897@gmail.com",
+    "phone": "3059657012",
+    "budget": "$1,500 to $2,500",
+    "activities": [
+      "Beach",
+      "Nature",
+      "Adventure"
+    ],
+    "notes": "travels with a cat"
+  },
+  {
+    "firstName": "Klaus",
+    "lastName": "von Hellman",
+    "email": "klaus@meow.com",
+    "phone": "999-123-4567",
+    "budget": "$9,000+",
+    "activities": [
+      "Nightlife",
+      "Food & Drink",
+      "Relaxation"
+    ],
+    "notes": "klaus is a cat.",
+    "id": "1752942987296"
+  }
+]

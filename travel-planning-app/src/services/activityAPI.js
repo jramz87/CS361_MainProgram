@@ -1,3 +1,6 @@
+// API service for activity exploration
+// TODO: should probably add retry logic at some point, if first response isnt relevant
+
 const API_BASE_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:3001/api'
     : '/api';
@@ -18,12 +21,13 @@ export const exploreDestination = async (explorationData, explorationPreferences
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             
+            // handle different error types
             if (response.status === 429) {
-                throw new Error('Too many requests. Please try again later.');
+                throw new Error('Too many requests - try again later');
             } else if (response.status >= 500) {
-                throw new Error('Destination exploration service is temporarily unavailable.');
+                throw new Error('Service temporarily unavailable');
             } else {
-                throw new Error(errorData.message || 'Failed to explore destination');
+                throw new Error(errorData.message || 'Failed to get destination info');
             }
         }
 
@@ -31,8 +35,9 @@ export const exploreDestination = async (explorationData, explorationPreferences
         return result.data;
 
     } catch (error) {
+        // network errors
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Unable to connect to destination exploration service');
+            throw new Error('Connection failed');
         }
         throw error;
     }

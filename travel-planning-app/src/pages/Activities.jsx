@@ -1,3 +1,5 @@
+// activities page
+
 import { useState } from 'react';
 import { exploreDestination } from '../services/activityAPI';
 
@@ -8,6 +10,7 @@ export default function Activities() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // move this?
     const monthOptions = [
         { value: 'january', label: 'January' },
         { value: 'february', label: 'February' },
@@ -34,19 +37,15 @@ export default function Activities() {
 
         try {
             const explorationData = {
-                location: destination,
-                days: []
+                location: destination
             };
 
             const explorationPreferences = {
-                timeOfYear: timeOfYear,
-                explorationType: 'destination-overview',
-                interests: ['general exploration', 'popular attractions', 'local culture']
+                timeOfYear: timeOfYear
             };
 
             const result = await exploreDestination(explorationData, explorationPreferences);
             setRecommendations(result);
-
         } catch (err) {
             setError('Failed to get activity suggestions: ' + err.message);
             console.error('Activity exploration error:', err);
@@ -61,7 +60,7 @@ export default function Activities() {
         }
     };
 
-    return (
+    return (  // using tailwind components below
         <div className="p-6">
             <h1 className="text-3xl font-bold mb-6" style={{ color: '#0081A7' }}>
                 Activity Suggestions
@@ -139,7 +138,7 @@ export default function Activities() {
             {error && (
                 <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #F07167' }}>
                     <p style={{ color: '#0081A7' }}>
-                        ⚠️ {error}
+                        {error}
                     </p>
                 </div>
             )}
@@ -186,21 +185,20 @@ export default function Activities() {
                             Want a Detailed Itinerary?
                         </h4>
                         <p className="text-sm" style={{ color: '#0081A7' }}>
-                            For personalized day-by-day recommendations based on specific client preferences, weather forecasts, and travel dates, create a custom itinerary in the planning section.
+                            For personalized day-by-day recommndations based on specific client preferences, weather forecasts, and travel dates, create a custom itinerary in the planning section.
                         </p>
                     </div>
                 </div>
             )}
 
-            {/* Getting Started Helper */}
+            {/* Getting Started */}
             {!recommendations && !loading && !error && (
                 <div className="p-6 rounded-lg text-center" style={{ backgroundColor: '#FDFCDC' }}>
-                    <div className="text-6xl mb-4">🗺️</div>
                     <h3 className="text-xl font-bold mb-2" style={{ color: '#0081A7' }}>
                         Discover What to Do Anywhere
                     </h3>
                     <p style={{ color: '#F07167' }}>
-                        Enter any destination to get AI-powered activity suggestions. Perfect for initial trip planning and client discussions.
+                        Enter any destination to get activity suggestions. Perfect for initial trip planning and client discussions.
                     </p>
                 </div>
             )}

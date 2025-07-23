@@ -1,3 +1,6 @@
+// AI recommendation service
+// handles OpenAI API calls and response parsing
+
 export class GenAIRecommendationService {
     constructor() {
         this.apiKey = process.env.OPENAI_API_KEY;
@@ -55,25 +58,25 @@ export class GenAIRecommendationService {
             return this.parseAIResponse(aiResponse, weatherData, userPreferences.explorationType);
 
         } catch (error) {
-            console.error('GenAI API Error:', error);
+            console.log('ai api error:', error);
             throw error;
         }
     }
 
     getSystemPrompt(explorationType) {
         if (explorationType === 'destination-overview') {
-            return `You are a knowledgeable travel guide specializing in destination overviews. Provide engaging, practical information about destinations including top attractions, activities, local culture, food, neighborhoods, seasonal considerations, transportation tips, and budget-friendly options. Keep responses informative but concise. Write in a friendly, enthusiastic tone that inspires travel.`;
+            return `From the perspective of a travel guide, give practical info about destinations, including top attractions, activities, culture, food, neighborhoods, transportation, and budget tips. Sound travel inspiring but concise.`;
         }
 
-        // Default system prompt for complex itinerary planning
-        return `You are an expert travel advisor and activity recommendation specialist. Provide detailed, practical, and personalized recommendations that consider weather conditions, client preferences, budget, and group dynamics. Always prioritize safety and cultural sensitivity in your suggestions.`;
+        // default for detailed planning
+        return `From the perspective of a travel guide: give detailed, practical recommendations considering weather, preferences, budget, and group needs. Prioritize safety and cultural sensitivity.`;
     }
 
     buildPrompt(weatherData, userPreferences) {
         const { location, days } = weatherData;
         const { timeOfYear, explorationType } = userPreferences;
 
-        // Simple destination exploration
+        // simple destination exploration, on activites page
         if (explorationType === 'destination-overview') {
             let prompt = `Tell me about visiting ${location}`;
             
@@ -81,28 +84,29 @@ export class GenAIRecommendationService {
                 prompt += ` in ${timeOfYear}`;
             }
             
-            prompt += `.\n\nI'd like to know:\n`;
-            prompt += `- What are the top attractions and must-see places?\n`;
-            prompt += `- What activities and experiences should I consider?\n`;
-            prompt += `- What's the local culture and food scene like?\n`;
-            prompt += `- What are the best areas/neighborhoods to explore?\n`;
+            prompt += `.\n\nI want to know:\n`;
+            prompt += `/ Top attractions and must-see places\n`;
+            prompt += `/ Activities and experiences\n`;
+            prompt += `/ Local culture and food\n`;
+            prompt += `/ Best local neighborhoods\n`;
             
             if (timeOfYear) {
-                prompt += `- What's special about visiting in ${timeOfYear}?\n`;
-                prompt += `- What's the weather typically like in ${timeOfYear}?\n`;
+                prompt += `/ What's special about ${timeOfYear}\n`;
+                prompt += `/ Typical weather in ${timeOfYear}\n`;
             }
             
-            prompt += `- Any local customs or etiquette I should know?\n`;
-            prompt += `- Transportation and getting around tips?\n`;
-            prompt += `- Budget-friendly recommendations?\n`;
-            prompt += `- Any hidden gems or local favorites?\n\n`;
+            prompt += `/ Local customs\n`;
+            prompt += `/ Transportation tips\n`;
+            prompt += `/ Budget options\n`;
+            prompt += `/ Hidden gems\n\n`;
             
-            prompt += `Please provide a comprehensive but engaging overview that would help someone plan their visit. Write in a conversational, enthusiastic tone.`;
+            prompt += `Give me an engaging overview thats written conversationally.`;
             
             return prompt;
         }
 
-        // Complex itinerary planning (for future use)
+        // detailed itinerary planning, on itineraries page
+        // TODO: this is still in progress, figure out how to integrate with itineraries
         return this.buildDetailedPrompt(weatherData, userPreferences);
     }
 
@@ -117,9 +121,9 @@ export class GenAIRecommendationService {
             additionalNotes
         } = userPreferences;
 
-        let prompt = `I'm planning a ${tripType} trip to ${location}.\n\n`;
+        let prompt = `Planning a ${tripType} trip to ${location}.\n\n`;
 
-        // Weather information
+        // add weather forecast if available
         if (days && days.length > 0) {
             prompt += `Weather forecast:\n`;
             days.forEach((day, index) => {
@@ -131,21 +135,20 @@ export class GenAIRecommendationService {
             prompt += '\n';
         }
 
-        // Client information (only if provided)
+        // client preferences, from their saved profile
         const hasPreferences = groupSize !== 'solo' || budget !== 'medium' || 
                                 activityTypes.length > 0 || clientPreferences || additionalNotes;
         
         if (hasPreferences) {
-            prompt += `Preferences:\n`;
+            prompt += `Trip details:\n`;
             if (groupSize !== 'solo') prompt += `- Group size: ${groupSize}\n`;
             if (budget !== 'medium') prompt += `- Budget level: ${budget}\n`;
             if (activityTypes.length > 0) prompt += `- Preferred activities: ${activityTypes.join(', ')}\n`;
             if (clientPreferences) prompt += `- Client notes: ${clientPreferences}\n`;
-            if (additionalNotes) prompt += `- Trip notes: ${additionalNotes}\n`;
+            if (additionalNotes) prompt += `- Additional notes: ${additionalNotes}\n`;
             prompt += '\n';
         }
 
-        // Request structure for detailed planning
         if (days && days.length > 0) {
             prompt += `Please provide specific recommendations for each day including activities, dining, and weather considerations.
 
@@ -168,11 +171,10 @@ Format as JSON:
             prompt += `Please provide destination recommendations including attractions, activities, dining, and cultural experiences.`;
         }
 
-        return prompt;
+        return prompt; // prompt feed to the OpenAI api for activity recommendations in itineraries page
     }
 
     parseAIResponse(aiResponse, weatherData, explorationType) {
-        // For simple destination exploration, return the raw response
         if (explorationType === 'destination-overview') {
             return {
                 success: true,
@@ -184,9 +186,9 @@ Format as JSON:
             };
         }
 
-        // For complex planning, try to parse JSON
+        // try to parse as JSON for detailed planning
         try {
-            const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+            const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);  // parse via regex
             if (jsonMatch) {
                 const parsed = JSON.parse(jsonMatch[0]);
                 return {
@@ -202,18 +204,18 @@ Format as JSON:
                 };
             }
         } catch (error) {
-            console.error('Failed to parse AI response:', error);
+            console.log('failed to parse ai response:', error);
             return {
                 success: false,
                 recommendations: this.getFallbackRecommendations(weatherData),
                 rawResponse: aiResponse,
-                error: 'Failed to parse AI response'
+                error: 'Failed to parse response'
             };
         }
     }
 
     extractKeyPoints(response) {
-        // Extract key bullet points or highlights from the response
+        // extract bullet points and key info from response
         const lines = response.split('\n');
         const highlights = [];
         
@@ -226,13 +228,13 @@ Format as JSON:
             }
         }
         
-        // If no highlights found, create some from the first few sentences
+        // fallback - use first few sentences if no bullets found
         if (highlights.length === 0) {
             const sentences = response.split('.').slice(0, 5);
             return sentences.map(s => s.trim()).filter(s => s.length > 10);
         }
         
-        return highlights.slice(0, 8); // Limit to 8 key points
+        return highlights.slice(0, 8); // limit to 8 'key points'
     }
 
     parseTextResponse(textResponse, weatherData) {
@@ -243,10 +245,10 @@ Format as JSON:
                 dayNumber: index + 1,
                 date: day.date,
                 overallRecommendation: `See full AI response for details`,
-                morningActivities: ['Check complete response'],
-                afternoonActivities: ['View full recommendations'],
-                eveningActivities: ['See AI response'],
-                diningRecommendations: ['Restaurant suggestions available']
+                morningActivities: ['Check complete recommendations'],
+                afternoonActivities: ['View full AI response'],
+                eveningActivities: ['See detailed suggestions'],
+                diningRecommendations: ['Restaurant recommendations available']
             })) || [],
             generalTips: ['Check the detailed AI response for recommendations'],
             textResponse: textResponse
@@ -258,7 +260,7 @@ Format as JSON:
         
         return {
             generalTips: [
-                `Explore the top attractions in ${location}`,
+                `Explore top attractions in ${location}`,
                 'Try local cuisine and specialties',
                 'Visit popular neighborhoods',
                 'Consider guided tours for cultural insights',

@@ -1,35 +1,23 @@
-import { useState } from 'react';
-import { PencilIcon, TrashIcon, CalendarIcon, MapIcon, UsersIcon, ExclamationTriangleIcon } from '../components/Icons';
+// itineraries page
+
+import { useState, useEffect } from 'react';
 import ItineraryForm from '../components/ItineraryForm';
 
 export default function Itineraries() {
     const [showForm, setShowForm] = useState(false);
     const [editingItinerary, setEditingItinerary] = useState(null);
-    const [deleteConfirmation, setDeleteConfirmation] = useState(null);
-    const [itineraries, setItineraries] = useState([
-        {
-            id: 1,
-            tripTitle: 'Paris Adventure 2024',
-            clientName: 'John Doe',
-            destination: 'Paris, France',
-            startDate: '2024-08-15',
-            endDate: '2024-08-22',
-            numberOfTravelers: 2,
-            tripType: 'Leisure',
-            status: 'Planning'
-        },
-        {
-            id: 2,
-            tripTitle: 'Tokyo Business Trip',
-            clientName: 'Jane Smith',
-            destination: 'Tokyo, Japan',
-            startDate: '2024-09-01',
-            endDate: '2024-09-05',
-            numberOfTravelers: 1,
-            tripType: 'Business',
-            status: 'Confirmed'
-        }
-    ]);
+    const [deleteConfirm, setDeleteConfirm] = useState(null);
+    const [itineraries, setItineraries] = useState([]);
+
+    useEffect(() => {
+        loadItineraries();
+    }, []);
+
+    const loadItineraries = async () => {
+        const response = await fetch('/api/itineraries');
+        const data = await response.json();
+        setItineraries(data);
+    };
 
     const handleAddItinerary = () => {
         setEditingItinerary(null);
@@ -42,67 +30,43 @@ export default function Itineraries() {
     };
 
     const handleDeleteItinerary = (itineraryId) => {
-        const itinerary = itineraries.find(item => item.id === itineraryId);
-        setDeleteConfirmation(itinerary);
+        let itinerary = itineraries.find(item => item.id === itineraryId);
+        setDeleteConfirm(itinerary);
     };
 
-    const confirmDelete = () => {
-        if (deleteConfirmation) {
-            setItineraries(itineraries.filter(itinerary => itinerary.id !== deleteConfirmation.id));
-            setDeleteConfirmation(null);
+    const confirmDelete = async () => {
+        if (deleteConfirm) {
+            await fetch(`/api/itineraries/${deleteConfirm.id}`, {
+                method: 'DELETE'
+            });
+            setDeleteConfirm(null);
+            loadItineraries();
         }
     };
 
-    const cancelDelete = () => {
-        setDeleteConfirmation(null);
-    };
-
-    const handleSaveItinerary = (itineraryData) => {
+    const handleSaveItinerary = async (itineraryData) => {
+        // update existing itinerariy
         if (editingItinerary) {
-            // Update existing itinerary
-            setItineraries(itineraries.map(itinerary => 
-                itinerary.id === editingItinerary.id 
-                    ? { ...itinerary, ...itineraryData }
-                    : itinerary
-            ));
+            await fetch(`/api/itineraries/${editingItinerary.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(itineraryData)
+            });
+         // create a itinerary
         } else {
-            // Add new itinerary
-            const newItinerary = {
-                ...itineraryData,
-                id: Math.max(...itineraries.map(i => i.id), 0) + 1,
-                status: 'Planning',
-                clientName: 'Client Name' // This would come from the selected client
-            };
-            setItineraries([...itineraries, newItinerary]);
+            await fetch('/api/itineraries', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...itineraryData,
+                    status: 'Planning'
+                })
+            });
         }
+        
         setShowForm(false);
         setEditingItinerary(null);
-    };
-
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'Confirmed': return '#00AFB9';
-            case 'Planning': return '#F07167';
-            case 'Completed': return '#0081A7';
-            default: return '#F07167';
-        }
-    };
-
-    const getClientName = (clientId) => {
-        // This should match the clients array in ItineraryForm, to be made dynamic
-        const clients = [
-            { id: 1, firstName: 'John', lastName: 'Doe' },
-            { id: 2, firstName: 'Jane', lastName: 'Smith' }
-        ];
-        const client = clients.find(c => c.id === parseInt(clientId));
-        return client ? `${client.firstName} ${client.lastName}` : 'Unknown Client';
-    };
-
-    const formatDateRange = (startDate, endDate) => {
-        if (!startDate || !endDate) return 'Dates TBD';
-        const start = new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        const end = new Date(endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        return `${start} - ${end}`;
+        loadItineraries();
     };
 
     if (showForm) {
@@ -118,7 +82,7 @@ export default function Itineraries() {
         );
     }
 
-    return (
+    return (    // tailwind classes used for layout
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
@@ -126,64 +90,48 @@ export default function Itineraries() {
                         Travel Itineraries
                     </h1>
                     <p className="mt-2 text-lg" style={{ color: '#F07167' }}>
-                        Create and manage detailed travel itineraries for your clients
+                        Create and manage travel itineraries
                     </p>
                 </div>
                 <button
                     onClick={handleAddItinerary}
-                    className="flex items-center gap-2 px-6 py-3 rounded-md text-white font-semibold shadow-lg hover:opacity-90 transition-all"
+                    className="flex items-center gap-2 px-6 py-3 rounded-md text-white font-semibold shadow-lg hover:opacity-90"
                     style={{ backgroundColor: '#00AFB9' }}
                 >
-                    <CalendarIcon />
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                    </svg>
                     Add New Itinerary
                 </button>
             </div>
 
-            {/* Delete Confirmation */}
-            {deleteConfirmation && (
+            {deleteConfirm && (
                 <div className="mb-6 rounded-md p-4" style={{ backgroundColor: '#FED9B7', border: '2px solid #F07167' }}>
                     <div className="flex">
-                        <div className="shrink-0">
-                            <ExclamationTriangleIcon aria-hidden="true" className="size-5" style={{ color: '#F07167' }} />
-                        </div>
                         <div className="ml-3">
                             <h3 className="text-sm font-medium" style={{ color: '#0081A7' }}>
                                 Delete Itinerary
                             </h3>
                             <div className="mt-2 text-sm" style={{ color: '#0081A7' }}>
                                 <p>
-                                    Are you sure you want to delete "{deleteConfirmation.tripTitle}"? This action cannot be undone.
+                                    Are you sure you want to delete "{deleteConfirm.tripTitle}"? This cannot be undone.
                                 </p>
                             </div>
-                            <div className="mt-4">
-                                <div className="-mx-2 -my-1.5 flex">
-                                    <button
-                                        type="button"
-                                        onClick={confirmDelete}
-                                        className="rounded-md px-2 py-1.5 text-sm font-medium hover:opacity-80 focus:ring-2 focus:ring-offset-2 focus:outline-hidden transition-all"
-                                        style={{ 
-                                            backgroundColor: '#F07167', 
-                                            color: 'white',
-                                            '--tw-ring-color': '#F07167',
-                                            '--tw-ring-offset-color': '#FED9B7'
-                                        }}
-                                    >
-                                        Delete
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={cancelDelete}
-                                        className="ml-3 rounded-md px-2 py-1.5 text-sm font-medium hover:opacity-80 focus:ring-2 focus:ring-offset-2 focus:outline-hidden transition-all"
-                                        style={{ 
-                                            backgroundColor: '#00AFB9', 
-                                            color: 'white',
-                                            '--tw-ring-color': '#00AFB9',
-                                            '--tw-ring-offset-color': '#FED9B7'
-                                        }}
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
+                            <div className="mt-4 flex gap-3">
+                                <button
+                                    onClick={confirmDelete}
+                                    className="rounded-md px-3 py-2 text-sm font-medium text-white hover:opacity-80"
+                                    style={{ backgroundColor: '#F07167' }}
+                                >
+                                    Delete
+                                </button>
+                                <button
+                                    onClick={() => setDeleteConfirm(null)}
+                                    className="rounded-md px-3 py-2 text-sm font-medium text-white hover:opacity-80"
+                                    style={{ backgroundColor: '#00AFB9' }}
+                                >
+                                    Cancel
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -192,123 +140,110 @@ export default function Itineraries() {
 
             {itineraries.length === 0 ? (
                 <div className="text-center py-12">
-                    <div className="mx-auto h-12 w-12 text-gray-400">
-                        <CalendarIcon />
-                    </div>
                     <h3 className="mt-2 text-sm font-semibold" style={{ color: '#0081A7' }}>
                         No itineraries yet
                     </h3>
                     <p className="mt-1 text-sm" style={{ color: '#F07167' }}>
                         Get started by creating your first travel itinerary.
                     </p>
-                    <div className="mt-6">
-                        <button
-                            onClick={handleAddItinerary}
-                            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white"
-                            style={{ backgroundColor: '#00AFB9' }}
-                        >
-                            <div className="-ml-1 mr-2">
-                                <CalendarIcon />
-                            </div>
-                            Create Itinerary
-                        </button>
-                    </div>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {itineraries.map(itinerary => (
                         <div 
                             key={itinerary.id} 
-                            className="relative group p-6 rounded-xl shadow-lg border hover:shadow-xl transition-all duration-200"
+                            className="relative group p-6 rounded-xl shadow-lg border hover:shadow-xl"
                             style={{ 
                                 backgroundColor: '#FDFCDC', 
                                 borderColor: '#00AFB9',
                                 borderWidth: '2px'
                             }}
                         >
-                            {/* Action buttons */}
-                            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100">
                                 <button
                                     onClick={() => handleEditItinerary(itinerary)}
-                                    className="p-2 rounded-full hover:bg-opacity-80 transition-colors"
+                                    className="p-2 rounded-full hover:opacity-80"
                                     style={{ backgroundColor: '#00AFB9', color: 'white' }}
-                                    title="Edit itinerary"
                                 >
-                                    <PencilIcon />
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                    </svg>
                                 </button>
                                 <button
                                     onClick={() => handleDeleteItinerary(itinerary.id)}
-                                    className="p-2 rounded-full hover:bg-opacity-80 transition-colors"
+                                    className="p-2 rounded-full hover:opacity-80"
                                     style={{ backgroundColor: '#F07167', color: 'white' }}
-                                    title="Delete itinerary"
                                 >
-                                    <TrashIcon />
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                    </svg>
                                 </button>
                             </div>
 
-                            {/* Itinerary info */}
                             <div className="mb-4">
                                 <h3 className="text-xl font-bold mb-2" style={{ color: '#0081A7' }}>
                                     {itinerary.tripTitle}
                                 </h3>
                                 <div className="flex items-center gap-2 mb-2">
                                     <span 
-                                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold"
-                                        style={{ 
-                                            backgroundColor: getStatusColor(itinerary.status),
-                                            color: 'white'
-                                        }}
+                                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-white"
+                                        style={{ backgroundColor: itinerary.status === 'Confirmed' ? '#00AFB9' : '#F07167' }}
                                     >
-                                        {itinerary.status}
+                                        {itinerary.status || 'Planning'}
                                     </span>
-                                    <span 
-                                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold"
-                                        style={{ 
-                                            backgroundColor: '#FED9B7',
-                                            color: '#0081A7'
-                                        }}
-                                    >
-                                        {itinerary.tripType}
-                                    </span>
+                                    {itinerary.tripType && (
+                                        <span 
+                                            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold"
+                                            style={{ backgroundColor: '#FED9B7', color: '#0081A7' }}
+                                        >
+                                            {itinerary.tripType}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="space-y-3">
-                                <div className="flex items-center gap-3">
-                                    <div style={{ color: '#00AFB9' }}>
-                                        <UsersIcon />
+                                {itinerary.clientName && (
+                                    <div className="flex items-center gap-3">
+                                        <svg className="w-5 h-5" style={{ color: '#00AFB9' }} fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                        </svg>
+                                        <span className="text-sm" style={{ color: '#F07167' }}>
+                                            {itinerary.clientName}
+                                        </span>
                                     </div>
-                                    <span className="text-sm" style={{ color: '#F07167' }}>
-                                        {itinerary.clientName}
-                                    </span>
-                                </div>
+                                )}
                                 
                                 <div className="flex items-center gap-3">
-                                    <div style={{ color: '#00AFB9' }}>
-                                        <MapIcon />
-                                    </div>
+                                    <svg className="w-5 h-5" style={{ color: '#00AFB9' }} fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                    </svg>
                                     <span className="text-sm" style={{ color: '#F07167' }}>
                                         {itinerary.destination}
                                     </span>
                                 </div>
                                 
-                                <div className="flex items-center gap-3">
-                                    <div style={{ color: '#00AFB9' }}>
-                                        <CalendarIcon />
+                                {itinerary.startDate && itinerary.endDate && (
+                                    <div className="flex items-center gap-3">
+                                        <svg className="w-5 h-5" style={{ color: '#00AFB9' }} fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                                        </svg>
+                                        <span className="text-sm" style={{ color: '#F07167' }}>
+                                            {new Date(itinerary.startDate).toLocaleDateString()} - {new Date(itinerary.endDate).toLocaleDateString()}
+                                        </span>
                                     </div>
-                                    <span className="text-sm" style={{ color: '#F07167' }}>
-                                        {formatDateRange(itinerary.startDate, itinerary.endDate)}
-                                    </span>
-                                </div>
+                                )}
                                 
-                                <div className="flex items-center gap-3">
-                                    <div style={{ color: '#00AFB9' }}>
-                                        <UsersIcon />
+                                {itinerary.numberOfTravelers && (
+                                    <div className="flex items-center gap-3">
+                                        <svg className="w-5 h-5" style={{ color: '#00AFB9' }} fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                        </svg>
+                                        <span className="text-sm" style={{ color: '#F07167' }}>
+                                            {itinerary.numberOfTravelers} {itinerary.numberOfTravelers === 1 ? 'Traveler' : 'Travelers'}
+                                        </span>
                                     </div>
-                                    <span className="text-sm" style={{ color: '#F07167' }}>
-                                        {itinerary.numberOfTravelers} {itinerary.numberOfTravelers === 1 ? 'Traveler' : 'Travelers'}
-                                    </span>
-                                </div>
+                                )}
                             </div>
                         </div>
                     ))}

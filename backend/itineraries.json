@@ -1,0 +1,53 @@
+[
+  {
+    "tripTitle": "Paris Adventure 2024",
+    "clientName": "Jessica Ramirez",
+    "destination": "Paris, France",
+    "startDate": "2025-08-01",
+    "endDate": "2025-08-02",
+    "numberOfTravelers": 1,
+    "tripType": "Leisure",
+    "notes": "cats allowed",
+    "dailyPlans": [
+      {
+        "date": "2025-08-01",
+        "weather": "74°F - Partially cloudy",
+        "activities": "test1"
+      },
+      {
+        "date": "2025-08-02",
+        "weather": "68°F - Partially cloudy",
+        "activities": "test2"
+      }
+    ],
+    "id": "1752894746017"
+  },
+  {
+    "tripTitle": "Miami",
+    "clientName": "Klaus von Hellman",
+    "destination": "miami, florida",
+    "startDate": "2026-10-01",
+    "endDate": "2026-10-03",
+    "numberOfTravelers": "1",
+    "tripType": "Business",
+    "notes": "",
+    "dailyPlans": [
+      {
+        "date": "2026-10-01",
+        "weather": "81°F - Partially cloudy",
+        "activities": ""
+      },
+      {
+        "date": "2026-10-02",
+        "weather": "81°F - Partially cloudy",
+        "activities": ""
+      },
+      {
+        "date": "2026-10-03",
+        "weather": "82°F - Partially cloudy",
+        "activities": ""
+      }
+    ],
+    "id": "1752895092202"
+  }
+]

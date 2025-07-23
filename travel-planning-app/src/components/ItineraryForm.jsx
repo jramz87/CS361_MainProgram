@@ -1,228 +1,216 @@
-import { useState } from 'react';
-import { ChevronDownIcon, CalendarIcon, MapIcon, CloudIcon, PaperAirplaneIcon, TrashIcon, WeatherIcon } from '../components/Icons';
-import { getWeatherForecast } from '../services/weatherAPI';
+// itinerary questionnaire displayed on create new itinerary page
+
+import React, { useState, useEffect } from 'react';
+
+// TODO: move these ?
+const TRIP_TYPES = ['Leisure', 'Business', 'Adventure', 'Family'];
 
 export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
-    const [clients] = useState([
-        { id: 1, firstName: 'John', lastName: 'Doe' },
-        { id: 2, firstName: 'Jane', lastName: 'Smith' }
-    ]);
-
+    const [clients, setClients] = useState([]);
+    const [isLoadingWeather, setIsLoadingWeather] = useState(false);
+    
+    // simplify this somehow?
     const [formData, setFormData] = useState({
         tripTitle: itinerary?.tripTitle || '',
-        clientId: itinerary?.clientId || '',
+        clientName: itinerary?.clientName || '',
         destination: itinerary?.destination || '',
         startDate: itinerary?.startDate || '',
         endDate: itinerary?.endDate || '',
         numberOfTravelers: itinerary?.numberOfTravelers || 1,
         tripType: itinerary?.tripType || '',
-        departureAirport: itinerary?.departureAirport || '',
-        arrivalAirport: itinerary?.arrivalAirport || '',
-        outboundFlight: itinerary?.outboundFlight || '',
-        returnFlight: itinerary?.returnFlight || '',
-        hotelName: itinerary?.hotelName || '',
-        hotelAddress: itinerary?.hotelAddress || '',
-        checkInDate: itinerary?.checkInDate || '',
-        checkOutDate: itinerary?.checkOutDate || '',
-        roomType: itinerary?.roomType || '',
-        dailyItinerary: itinerary?.dailyItinerary || [
-            {
-                date: '',
-                weather: {
-                    temperature: '',
-                    conditions: '',
-                    precipitation: ''
-                },
-                activities: [
-                    {
-                        time: '',
-                        activity: '',
-                        location: '',
-                        notes: ''
-                    }
-                ]
-            }
-        ],
-        specialRequests: itinerary?.specialRequests || '',
-        emergencyContacts: itinerary?.emergencyContacts || '',
-        totalCost: itinerary?.totalCost || '',
-        notes: itinerary?.notes || ''
+        notes: itinerary?.notes || '',
+        dailyPlans: itinerary?.dailyPlans?.length > 0 
+            ? itinerary.dailyPlans 
+            : [{ date: '', weather: '', activities: '' }]
     });
 
-    const [weatherLoading, setWeatherLoading] = useState(false);
-    const [automationErrors, setAutomationErrors] = useState({});
+    useEffect(() => {
+        // load clients when component mounts
+        fetchClients();
+    }, []);
 
-    const tripTypes = [
-        'Leisure', 'Business', 'Adventure', 'Cultural', 'Romantic', 'Family', 'Group'
-    ];
+    const fetchClients = async () => {
+        try {
+            const response = await fetch('http://localhost:3001/api/clients');
+            if (!response.ok) {
+                throw new Error('Failed to fetch clients');
+            }
+            const clientData = await response.json();
+            setClients(clientData);
+        } catch (err) {
+            console.error('Error loading clients:', err);
+            // TODO: show user-friendly error message
+        }
+    };
 
     const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
+        const { name, value } = e.target;
+        setFormData(prevData => ({
+            ...prevData,
+            [name]: value
         }));
     };
 
-    const handleClientSelect = (clientId) => {
-        setFormData(prev => ({
-            ...prev,
-            clientId: clientId
-        }));
-    };
-
-    const fetchWeatherForAllDays = async () => {
-        if (!formData.destination || !formData.startDate || !formData.endDate) {
-            setAutomationErrors(prev => ({
-                ...prev,
-                weather: 'Please enter destination, start date, and end date first'
-            }));
+    const getWeatherData = async () => {
+        // basic validation
+        if (!formData.destination.trim()) {
+            alert('Please enter a destination first!');
+            return;
+        }
+        if (!formData.startDate || !formData.endDate) {
+            alert('Please select both start and end dates');
             return;
         }
 
-        setWeatherLoading(true);
-        setAutomationErrors(prev => ({ ...prev, weather: null }));
-
+        setIsLoadingWeather(true);
+        
         try {
-            const weatherData = await getWeatherForecast(
-                formData.destination,
-                formData.startDate,
-                formData.endDate
-            );
-
-            if (weatherData && weatherData.days && weatherData.days.length > 0) {
-                setFormData(prev => ({
-                    ...prev,
-                    dailyItinerary: weatherData.days.map((day, index) => {
-                        const existingDay = prev.dailyItinerary[index] || {
-                            activities: [{ time: '', activity: '', location: '', notes: '' }]
-                        };
-                        
-                        return {
-                            ...existingDay,
-                            date: day.date || '',
-                            weather: {
-                                temperature: day.temp ? `${Math.round(day.temp)}°F` : '',
-                                conditions: day.conditions || '',
-                                precipitation: day.humidity ? `${Math.round(day.humidity)}%` : ''
-                            }
-                        };
-                    })
+            const apiUrl = `http://localhost:3001/api/weather/forecast?location=${encodeURIComponent(formData.destination)}&startDate=${formData.startDate}&endDate=${formData.endDate}`;
+            const response = await fetch(apiUrl);
+            
+            if (!response.ok) {
+                throw new Error(`Weather API returned ${response.status}`);
+            }
+            
+            const weatherData = await response.json();
+            
+            if (weatherData?.days) {
+                const plans = generateDailyPlansWithWeather(weatherData.days);
+                setFormData(prev => ({ 
+                    ...prev, 
+                    dailyPlans: plans 
                 }));
+            } else {
+                alert('No weather data available for those dates');
             }
         } catch (error) {
-            setAutomationErrors(prev => ({
-                ...prev,
-                weather: `Failed to fetch weather: ${error.message}`
-            }));
+            console.error('Weather fetch failed:', error);
+            alert("Couldn\\'t get weather info - please try again later");
         } finally {
-            setWeatherLoading(false);
+            setIsLoadingWeather(false);
         }
     };
 
-    const addDayToItinerary = () => {
+    // helper function to generate daily plans with weather
+    const generateDailyPlansWithWeather = (weatherDays) => {
+        const start = new Date(formData.startDate);
+        const end = new Date(formData.endDate);
+        const plans = [];
+        
+        for (let currentDate = new Date(start); currentDate <= end; currentDate.setDate(currentDate.getDate() + 1)) {
+            const dateString = currentDate.toISOString().split('T')[0];
+            const weatherInfo = weatherDays.find(day => day.datetime === dateString);
+            
+            plans.push({
+                date: dateString,
+                weather: weatherInfo 
+                    ? `${Math.round(weatherInfo.temp)}°F - ${weatherInfo.conditions}`
+                    : 'Weather unavailable',
+                activities: ''
+            });
+        }
+        
+        return plans;
+    };
+
+    const addNewDay = () => {
         setFormData(prev => ({
             ...prev,
-            dailyItinerary: [...prev.dailyItinerary, {
-                date: '',
-                weather: { temperature: '', conditions: '', precipitation: '' },
-                activities: [{ time: '', activity: '', location: '', notes: '' }]
-            }]
+            dailyPlans: [
+                ...prev.dailyPlans, 
+                { date: '', weather: '', activities: '' }
+            ]
         }));
     };
 
-    const removeDayFromItinerary = (dayIndex) => {
-        if (formData.dailyItinerary.length > 1) {
-            setFormData(prev => ({
+    const removeDayPlan = (indexToRemove) => {
+        // don't let them remove the last day
+        if (formData.dailyPlans.length <= 1) return;
+        
+        setFormData(prev => ({
+            ...prev,
+            dailyPlans: prev.dailyPlans.filter((_, idx) => idx !== indexToRemove)
+        }));
+    };
+
+    const updateDayPlan = (dayIndex, fieldName, newValue) => {
+        setFormData(prev => {
+            const updatedPlans = [...prev.dailyPlans];
+            updatedPlans[dayIndex] = {
+                ...updatedPlans[dayIndex],
+                [fieldName]: newValue
+            };
+            
+            return {
                 ...prev,
-                dailyItinerary: prev.dailyItinerary.filter((_, index) => index !== dayIndex)
-            }));
+                dailyPlans: updatedPlans
+            };
+        });
+    };
+
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        
+        console.log('saving trip...');
+        
+        // basic validation 
+        if (!formData.tripTitle.trim() || !formData.destination.trim()) {
+            alert('Please fill in required fields');
+            return;
+        }
+        
+        try {
+            const method = itinerary ? 'PUT' : 'POST';
+            const url = itinerary 
+                ? `http://localhost:3001/api/itineraries/${itinerary.id}`
+                : 'http://localhost:3001/api/itineraries';
+                
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            if (!response.ok) {
+                console.log('server error:', response.status);
+                throw new Error(`Failed to save: ${response.status}`);
+            }
+            
+            const savedTrip = await response.json();
+            console.log('trip saved!', savedTrip);
+            alert('Trip saved!');
+            
+            // call parent callback if exists
+            if (onSave && typeof onSave === 'function') {
+                onSave(savedTrip);
+            }
+            
+        } catch (error) {
+            console.error('save error:', error);
+            alert('Could not save trip');
         }
     };
 
-    const addActivityToDay = (dayIndex) => {
-        setFormData(prev => {
-            const newItinerary = [...prev.dailyItinerary];
-            newItinerary[dayIndex].activities.push({
-                time: '', activity: '', location: '', notes: ''
-            });
-            return { ...prev, dailyItinerary: newItinerary };
-        });
-    };
-
-    const removeActivityFromDay = (dayIndex, activityIndex) => {
-        setFormData(prev => {
-            const newItinerary = [...prev.dailyItinerary];
-            if (newItinerary[dayIndex].activities.length > 1) {
-                newItinerary[dayIndex].activities = newItinerary[dayIndex].activities.filter((_, index) => index !== activityIndex);
-            }
-            return { ...prev, dailyItinerary: newItinerary };
-        });
-    };
-
-    const updateDayData = (dayIndex, field, value) => {
-        setFormData(prev => {
-            const newItinerary = [...prev.dailyItinerary];
-            if (field.startsWith('weather.')) {
-                const weatherField = field.split('.')[1];
-                newItinerary[dayIndex].weather[weatherField] = value;
-            } else {
-                newItinerary[dayIndex][field] = value;
-            }
-            return { ...prev, dailyItinerary: newItinerary };
-        });
-    };
-
-    const updateActivityData = (dayIndex, activityIndex, field, value) => {
-        setFormData(prev => {
-            const newItinerary = [...prev.dailyItinerary];
-            newItinerary[dayIndex].activities[activityIndex][field] = value;
-            return { ...prev, dailyItinerary: newItinerary };
-        });
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onSave(formData);
-    };
-
     return (
-        <div className="min-h-screen px-6 py-24 sm:py-32 lg:px-8" style={{ backgroundColor: '#FDFCDC' }}>
-            <div
-                aria-hidden="true"
-                className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80"
-            >
-                <div
-                    style={{
-                        clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)',
-                        background: 'linear-gradient(to top right, #F07167, #00AFB9)'
-                    }}
-                    className="relative left-1/2 -z-10 aspect-[1155/678] w-[72.1875rem] max-w-none -translate-x-1/2 rotate-[30deg] opacity-20 sm:left-[calc(50%-40rem)] sm:w-[72.1875rem]"
-                />
-            </div>
+        <div className="p-6" style={{ backgroundColor: '#FDFCDC', minHeight: '100vh' }}>
+            <div className="max-w-4xl mx-auto">
+                <h1 className="text-3xl font-bold mb-6" style={{ color: '#0081A7' }}>
+                    {itinerary ? 'Edit Your Trip' : 'Plan a New Trip'}
+                </h1>
 
-            <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold tracking-tight" style={{ color: '#0081A7' }}>
-                        {itinerary ? 'Edit Travel Itinerary' : 'Create Travel Itinerary'}
-                    </h1>
-                    <p className="mt-2 text-lg" style={{ color: '#F07167' }}>
-                        Create detailed travel itineraries with automated weather forecasting
-                    </p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-8">
-                    {/* Trip Basic Information */}
-                    <div className="p-6 rounded-xl border-2 shadow-lg" style={{ borderColor: '#00AFB9', backgroundColor: '#FDFCDC' }}>
-                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2" style={{ color: '#0081A7' }}>
-                            <PaperAirplaneIcon />
-                            Trip Information
+                <form onSubmit={handleFormSubmit} className="space-y-6">
+                    {/* Trip basics section */}
+                    <div className="p-4 rounded-lg border-2" style={{ borderColor: '#00AFB9', backgroundColor: '#FDFCDC' }}>
+                        <h2 className="text-xl font-bold mb-4" style={{ color: '#0081A7' }}>
+                            Basic Trip Info
                         </h2>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Trip Title *
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-semibold mb-1" style={{ color: '#0081A7' }}>
+                                    What should we call this trip? *
                                 </label>
                                 <input
                                     type="text"
@@ -230,74 +218,34 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
                                     value={formData.tripTitle}
                                     onChange={handleInputChange}
                                     required
-                                    placeholder="e.g., Paris Adventure 2024"
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
+                                    placeholder="e.g. Sarah's European Adventure"
+                                    className="w-full px-3 py-2 rounded border"
+                                    style={{ borderColor: '#00AFB9', color: '#0081A7' }}
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Select Client *
+                                <label className="block text-sm font-semibold mb-1" style={{ color: '#0081A7' }}>
+                                    Client
                                 </label>
-                                <div className="relative">
-                                    <select
-                                        name="clientId"
-                                        value={formData.clientId}
-                                        onChange={(e) => handleClientSelect(e.target.value)}
-                                        required
-                                        className="w-full appearance-none px-4 py-2 pr-10 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                        style={{ 
-                                            backgroundColor: '#FDFCDC',
-                                            borderColor: '#00AFB9',
-                                            outlineColor: '#00AFB9',
-                                            color: '#0081A7'
-                                        }}
-                                    >
-                                        <option value="">Choose a client</option>
-                                        {clients.map(client => (
-                                            <option key={client.id} value={client.id}>
-                                                {client.firstName} {client.lastName}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" style={{ color: '#00AFB9' }} />
-                                </div>
+                                <select
+                                    name="clientName"
+                                    value={formData.clientName}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 rounded border"
+                                    style={{ borderColor: '#00AFB9', color: '#0081A7' }}
+                                >
+                                    <option value="">-- Choose a client --</option>
+                                    {clients.map(client => (
+                                        <option key={client.id} value={`${client.firstName} ${client.lastName}`}>
+                                            {client.firstName} {client.lastName}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Trip Type
-                                </label>
-                                <div className="relative">
-                                    <select
-                                        name="tripType"
-                                        value={formData.tripType}
-                                        onChange={handleInputChange}
-                                        className="w-full appearance-none px-4 py-2 pr-10 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                        style={{ 
-                                            backgroundColor: '#FDFCDC',
-                                            borderColor: '#00AFB9',
-                                            outlineColor: '#00AFB9',
-                                            color: '#0081A7'
-                                        }}
-                                    >
-                                        <option value="">Select type</option>
-                                        {tripTypes.map(type => (
-                                            <option key={type} value={type}>{type}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" style={{ color: '#00AFB9' }} />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
+                                <label className="block text-sm font-semibold mb-1" style={{ color: '#0081A7' }}>
                                     Destination *
                                 </label>
                                 <input
@@ -307,18 +255,61 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
                                     onChange={handleInputChange}
                                     required
                                     placeholder="Paris, France"
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
+                                    className="w-full px-3 py-2 rounded border"
+                                    style={{ borderColor: '#00AFB9', color: '#0081A7' }}
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
+                                <label className="block text-sm font-semibold mb-1" style={{ color: '#0081A7' }}>
+                                    Type of Trip
+                                </label>
+                                <select
+                                    name="tripType"
+                                    value={formData.tripType}
+                                    onChange={handleInputChange}
+                                    className="w-full px-3 py-2 rounded border"
+                                    style={{ borderColor: '#00AFB9', color: '#0081A7' }}
+                                >
+                                    <option value="">Select one...</option>
+                                    {TRIP_TYPES.map(type => (
+                                        <option key={type} value={type}>{type}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold mb-1" style={{ color: '#0081A7' }}>
+                                    Departure Date *
+                                </label>
+                                <input
+                                    type="date"
+                                    name="startDate"
+                                    value={formData.startDate}
+                                    onChange={handleInputChange}
+                                    required
+                                    className="w-full px-3 py-2 rounded border"
+                                    style={{ borderColor: '#00AFB9', color: '#0081A7' }}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold mb-1" style={{ color: '#0081A7' }}>
+                                    Return Date *
+                                </label>
+                                <input
+                                    type="date"
+                                    name="endDate"
+                                    value={formData.endDate}
+                                    onChange={handleInputChange}
+                                    required
+                                    className="w-full px-3 py-2 rounded border"
+                                    style={{ borderColor: '#00AFB9', color: '#0081A7' }}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold mb-1" style={{ color: '#0081A7' }}>
                                     Number of Travelers
                                 </label>
                                 <input
@@ -327,615 +318,136 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
                                     value={formData.numberOfTravelers}
                                     onChange={handleInputChange}
                                     min="1"
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Start Date *
-                                </label>
-                                <input
-                                    type="date"
-                                    name="startDate"
-                                    value={formData.startDate}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    End Date *
-                                </label>
-                                <input
-                                    type="date"
-                                    name="endDate"
-                                    value={formData.endDate}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
+                                    max="20"
+                                    className="w-full px-3 py-2 rounded border"
+                                    style={{ borderColor: '#00AFB9', color: '#0081A7' }}
                                 />
                             </div>
                         </div>
                     </div>
 
-                    {/* Flight Information */}
-                    <div className="p-6 rounded-xl border-2 shadow-lg" style={{ borderColor: '#00AFB9', backgroundColor: '#FDFCDC' }}>
-                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2" style={{ color: '#0081A7' }}>
-                            <PaperAirplaneIcon />
-                            Flight Information
-                        </h2>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Departure Airport
-                                </label>
-                                <input
-                                    type="text"
-                                    name="departureAirport"
-                                    value={formData.departureAirport}
-                                    onChange={handleInputChange}
-                                    placeholder="e.g., OKC - Oklahoma City"
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Arrival Airport
-                                </label>
-                                <input
-                                    type="text"
-                                    name="arrivalAirport"
-                                    value={formData.arrivalAirport}
-                                    onChange={handleInputChange}
-                                    placeholder="e.g., CDG - Paris Charles de Gaulle"
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Outbound Flight Details
-                                </label>
-                                <textarea
-                                    name="outboundFlight"
-                                    value={formData.outboundFlight}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                    placeholder="Flight number, departure time, arrival time, etc."
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Return Flight Details
-                                </label>
-                                <textarea
-                                    name="returnFlight"
-                                    value={formData.returnFlight}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                    placeholder="Flight number, departure time, arrival time, etc."
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Accommodation */}
-                    <div className="p-6 rounded-xl border-2 shadow-lg" style={{ borderColor: '#00AFB9', backgroundColor: '#FDFCDC' }}>
-                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2" style={{ color: '#0081A7' }}>
-                            <MapIcon />
-                            Accommodation
-                        </h2>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Hotel Name
-                                </label>
-                                <input
-                                    type="text"
-                                    name="hotelName"
-                                    value={formData.hotelName}
-                                    onChange={handleInputChange}
-                                    placeholder="e.g., Hotel Eiffel Tower"
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Room Type
-                                </label>
-                                <input
-                                    type="text"
-                                    name="roomType"
-                                    value={formData.roomType}
-                                    onChange={handleInputChange}
-                                    placeholder="e.g., Deluxe Double Room"
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Hotel Address
-                                </label>
-                                <input
-                                    type="text"
-                                    name="hotelAddress"
-                                    value={formData.hotelAddress}
-                                    onChange={handleInputChange}
-                                    placeholder="Full hotel address"
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Check-in Date
-                                </label>
-                                <input
-                                    type="date"
-                                    name="checkInDate"
-                                    value={formData.checkInDate}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Check-out Date
-                                </label>
-                                <input
-                                    type="date"
-                                    name="checkOutDate"
-                                    value={formData.checkOutDate}
-                                    onChange={handleInputChange}
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Daily Itinerary with Weather Automation */}
-                    <div className="p-6 rounded-xl border-2 shadow-lg" style={{ borderColor: '#00AFB9', backgroundColor: '#FDFCDC' }}>
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold flex items-center gap-2" style={{ color: '#0081A7' }}>
-                                <CalendarIcon />
-                                Daily Itinerary
+                    {/* Daily itinerary section */}
+                    <div className="p-4 rounded-lg border-2" style={{ borderColor: '#00AFB9', backgroundColor: '#FDFCDC' }}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold" style={{ color: '#0081A7' }}>
+                                Day-by-Day Plans
                             </h2>
-                            <div className="flex gap-3">
+                            <div className="flex gap-2">
                                 <button
                                     type="button"
-                                    onClick={fetchWeatherForAllDays}
-                                    disabled={weatherLoading}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-md text-white font-semibold shadow-lg hover:opacity-90 transition-all disabled:opacity-50"
+                                    onClick={getWeatherData}
+                                    disabled={isLoadingWeather}
+                                    className="px-4 py-2 rounded text-white font-semibold hover:opacity-90 disabled:opacity-50"
                                     style={{ backgroundColor: '#00AFB9' }}
                                 >
-                                    {weatherLoading ? (
-                                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                                    ) : (
-                                        <WeatherIcon />
-                                    )}
-                                    Auto Populate Weather
+                                    {isLoadingWeather ? 'Getting weather...' : 'Load Weather'}
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={addDayToItinerary}
-                                    className="px-4 py-2 rounded-md text-white font-semibold shadow-lg hover:opacity-90 transition-all"
-                                    style={{ backgroundColor: '#00AFB9' }}
+                                    onClick={addNewDay}
+                                    className="px-4 py-2 rounded text-white font-semibold hover:opacity-90"
+                                    style={{ backgroundColor: '#F07167' }}
                                 >
-                                    Add Day
+                                    Add Another Day
                                 </button>
                             </div>
                         </div>
 
-                        {/* Weather Error Display */}
-                        {automationErrors.weather && (
-                            <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #F07167' }}>
-                                <p className="text-sm" style={{ color: '#0081A7' }}>
-                                    ⚠️ {automationErrors.weather}
-                                </p>
-                            </div>
-                        )}
-
-                        {formData.dailyItinerary.map((day, dayIndex) => (
-                            <div key={dayIndex} className="mb-8 p-4 rounded-lg border-2" style={{ borderColor: '#FED9B7', backgroundColor: '#FED9B7' }}>
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-bold" style={{ color: '#0081A7' }}>
-                                        Day {dayIndex + 1}
+                        {formData.dailyPlans.map((dayPlan, idx) => (
+                            <div key={idx} className="mb-4 p-3 rounded border-2" style={{ borderColor: '#FED9B7', backgroundColor: '#FED9B7' }}>
+                                <div className="flex justify-between items-center mb-3">
+                                    <h3 className="font-bold" style={{ color: '#0081A7' }}>
+                                        Day #{idx + 1}
                                     </h3>
-                                    {formData.dailyItinerary.length > 1 && (
+                                    {formData.dailyPlans.length > 1 && (
                                         <button
                                             type="button"
-                                            onClick={() => removeDayFromItinerary(dayIndex)}
-                                            className="p-2 rounded-full hover:bg-opacity-80 transition-colors"
-                                            style={{ backgroundColor: '#F07167', color: 'white' }}
+                                            onClick={() => removeDayPlan(idx)}
+                                            className="px-2 py-1 rounded text-white text-sm hover:opacity-80"
+                                            style={{ backgroundColor: '#F07167' }}
                                             title="Remove this day"
                                         >
-                                            <TrashIcon />
+                                            Remove
                                         </button>
                                     )}
                                 </div>
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                     <div>
-                                        <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
+                                        <label className="block text-sm font-semibold mb-1" style={{ color: '#0081A7' }}>
                                             Date
                                         </label>
                                         <input
                                             type="date"
-                                            value={day.date}
-                                            onChange={(e) => updateDayData(dayIndex, 'date', e.target.value)}
-                                            className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                            style={{ 
-                                                backgroundColor: '#FDFCDC',
-                                                borderColor: '#00AFB9',
-                                                outlineColor: '#00AFB9',
-                                                color: '#0081A7'
-                                            }}
+                                            value={dayPlan.date}
+                                            onChange={(e) => updateDayPlan(idx, 'date', e.target.value)}
+                                            className="w-full px-2 py-1 rounded border"
+                                            style={{ borderColor: '#00AFB9', color: '#0081A7' }}
                                         />
                                     </div>
-                                </div>
-
-                                {/* Weather Section */}
-                                <div className="mb-4 p-4 rounded-lg" style={{ backgroundColor: '#FDFCDC' }}>
-                                    <h4 className="text-md font-semibold mb-3 flex items-center gap-2" style={{ color: '#0081A7' }}>
-                                        <CloudIcon />
-                                        Weather
-                                    </h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1" style={{ color: '#0081A7' }}>
-                                                Temperature
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={day.weather.temperature}
-                                                onChange={(e) => updateDayData(dayIndex, 'weather.temperature', e.target.value)}
-                                                placeholder="e.g., 72°F / 22°C"
-                                                className="w-full px-3 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                                style={{ 
-                                                    backgroundColor: '#FDFCDC',
-                                                    borderColor: '#00AFB9',
-                                                    outlineColor: '#00AFB9',
-                                                    color: '#0081A7'
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1" style={{ color: '#0081A7' }}>
-                                                Conditions
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={day.weather.conditions}
-                                                onChange={(e) => updateDayData(dayIndex, 'weather.conditions', e.target.value)}
-                                                placeholder="e.g., Sunny, Cloudy, Rainy"
-                                                className="w-full px-3 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                                style={{ 
-                                                    backgroundColor: '#FDFCDC',
-                                                    borderColor: '#00AFB9',
-                                                    outlineColor: '#00AFB9',
-                                                    color: '#0081A7'
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1" style={{ color: '#0081A7' }}>
-                                                Precipitation
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={day.weather.precipitation}
-                                                onChange={(e) => updateDayData(dayIndex, 'weather.precipitation', e.target.value)}
-                                                placeholder="e.g., 0%, 20%"
-                                                className="w-full px-3 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                                style={{ 
-                                                    backgroundColor: '#FDFCDC',
-                                                    borderColor: '#00AFB9',
-                                                    outlineColor: '#00AFB9',
-                                                    color: '#0081A7'
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Activities Section */}
-                                <div className="mb-4">
-                                    <div className="flex justify-between items-center mb-3">
-                                        <h4 className="text-md font-semibold flex items-center gap-2" style={{ color: '#0081A7' }}>
-                                            Activities
-                                        </h4>
-                                        <button
-                                            type="button"
-                                            onClick={() => addActivityToDay(dayIndex)}
-                                            className="px-3 py-1 rounded-md text-white text-sm font-semibold hover:opacity-90 transition-all"
-                                            style={{ backgroundColor: '#F07167' }}
-                                        >
-                                            Add Activity
-                                        </button>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-semibold mb-1" style={{ color: '#0081A7' }}>
+                                            Expected Weather
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={dayPlan.weather}
+                                            onChange={(e) => updateDayPlan(idx, 'weather', e.target.value)}
+                                            placeholder="75°F - Partly cloudy"
+                                            className="w-full px-2 py-1 rounded border"
+                                            style={{ borderColor: '#00AFB9', color: '#0081A7' }}
+                                        />
                                     </div>
                                     
-                                    {day.activities.map((activity, activityIndex) => (
-                                        <div key={activityIndex} className="mb-4 p-3 rounded-lg relative" style={{ backgroundColor: '#FDFCDC' }}>
-                                            {/* Delete button for activity */}
-                                            {day.activities.length > 1 && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeActivityFromDay(dayIndex, activityIndex)}
-                                                    className="absolute top-2 right-2 p-1 rounded-full hover:bg-opacity-80 transition-colors"
-                                                    style={{ backgroundColor: '#F07167', color: 'white' }}
-                                                    title="Remove this activity"
-                                                >
-                                                    <TrashIcon />
-                                                </button>
-                                            )}
-                                            
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-8">
-                                                <div>
-                                                    <label className="block text-sm font-medium mb-1" style={{ color: '#0081A7' }}>
-                                                        Time
-                                                    </label>
-                                                    <input
-                                                        type="time"
-                                                        value={activity.time}
-                                                        onChange={(e) => updateActivityData(dayIndex, activityIndex, 'time', e.target.value)}
-                                                        className="w-full px-3 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                                        style={{ 
-                                                            backgroundColor: '#FDFCDC',
-                                                            borderColor: '#00AFB9',
-                                                            outlineColor: '#00AFB9',
-                                                            color: '#0081A7'
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium mb-1" style={{ color: '#0081A7' }}>
-                                                        Location
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={activity.location}
-                                                        onChange={(e) => updateActivityData(dayIndex, activityIndex, 'location', e.target.value)}
-                                                        placeholder="e.g., Eiffel Tower"
-                                                        className="w-full px-3 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                                        style={{ 
-                                                            backgroundColor: '#FDFCDC',
-                                                            borderColor: '#00AFB9',
-                                                            outlineColor: '#00AFB9',
-                                                            color: '#0081A7'
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div className="md:col-span-2">
-                                                    <label className="block text-sm font-medium mb-1" style={{ color: '#0081A7' }}>
-                                                        Activity Description
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={activity.activity}
-                                                        onChange={(e) => updateActivityData(dayIndex, activityIndex, 'activity', e.target.value)}
-                                                        placeholder="e.g., Visit Eiffel Tower and take photos"
-                                                        className="w-full px-3 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                                        style={{ 
-                                                            backgroundColor: '#FDFCDC',
-                                                            borderColor: '#00AFB9',
-                                                            outlineColor: '#00AFB9',
-                                                            color: '#0081A7'
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div className="md:col-span-2">
-                                                    <label className="block text-sm font-medium mb-1" style={{ color: '#0081A7' }}>
-                                                        Notes
-                                                    </label>
-                                                    <textarea
-                                                        value={activity.notes}
-                                                        onChange={(e) => updateActivityData(dayIndex, activityIndex, 'notes', e.target.value)}
-                                                        placeholder="Additional notes, reservations, contact info, etc."
-                                                        rows={2}
-                                                        className="w-full px-3 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                                        style={{ 
-                                                            backgroundColor: '#FDFCDC',
-                                                            borderColor: '#00AFB9',
-                                                            outlineColor: '#00AFB9',
-                                                            color: '#0081A7'
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
+                                    <div>
+                                        <label className="block text-sm font-semibold mb-1" style={{ color: '#0081A7' }}>
+                                            Planned Activities
+                                        </label>
+                                        <textarea
+                                            value={dayPlan.activities}
+                                            onChange={(e) => updateDayPlan(idx, 'activities', e.target.value)}
+                                            placeholder="Morning: Visit Eiffel Tower&#10;Afternoon: Louvre Museum&#10;Evening: Seine River cruise"
+                                            rows={2}
+                                            className="w-full px-2 py-1 rounded border resize-none"
+                                            style={{ borderColor: '#00AFB9', color: '#0081A7' }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    {/* Additional Information */}
-                    <div className="p-6 rounded-xl border-2 shadow-lg" style={{ borderColor: '#00AFB9', backgroundColor: '#FDFCDC' }}>
-                        <h2 className="text-2xl font-bold mb-6" style={{ color: '#0081A7' }}>
-                            Additional Information
+                    {/* Additional notes */}
+                    <div className="p-4 rounded-lg border-2" style={{ borderColor: '#00AFB9', backgroundColor: '#FDFCDC' }}>
+                        <h2 className="text-xl font-bold mb-4" style={{ color: '#0081A7' }}>
+                            Additional Notes & Special Requests
                         </h2>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Total Trip Cost
-                                </label>
-                                <input
-                                    type="text"
-                                    name="totalCost"
-                                    value={formData.totalCost}
-                                    onChange={handleInputChange}
-                                    placeholder="e.g., $3,500"
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Emergency Contacts
-                                </label>
-                                <textarea
-                                    name="emergencyContacts"
-                                    value={formData.emergencyContacts}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                    placeholder="Emergency contact names and phone numbers"
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Special Requests & Notes
-                                </label>
-                                <textarea
-                                    name="specialRequests"
-                                    value={formData.specialRequests}
-                                    onChange={handleInputChange}
-                                    rows={4}
-                                    placeholder="Dietary restrictions, accessibility needs, special occasions, etc."
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-semibold mb-2" style={{ color: '#0081A7' }}>
-                                    Internal Notes
-                                </label>
-                                <textarea
-                                    name="notes"
-                                    value={formData.notes}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                    placeholder="Internal notes for travel planning team"
-                                    className="w-full px-4 py-2 rounded-md border focus:outline-2 focus:-outline-offset-2"
-                                    style={{ 
-                                        backgroundColor: '#FDFCDC',
-                                        borderColor: '#00AFB9',
-                                        outlineColor: '#00AFB9',
-                                        color: '#0081A7'
-                                    }}
-                                />
-                            </div>
-                        </div>
+                        <textarea
+                            name="notes"
+                            value={formData.notes}
+                            onChange={handleInputChange}
+                            rows={4}
+                            placeholder="Any dietary restrictions, accessibility needs, special occasions, or other important details..."
+                            className="w-full px-3 py-2 rounded border"
+                            style={{ borderColor: '#00AFB9', color: '#0081A7' }}
+                        />
                     </div>
 
-                    {/* Submit Buttons */}
-                    <div className="flex gap-4 pt-6">
+                    {/* Form actions */}
+                    <div className="flex gap-4">
                         <button
                             type="submit"
-                            className="flex-1 px-6 py-3 rounded-md text-white font-semibold shadow-lg hover:opacity-90 transition-all"
+                            className="flex-1 px-6 py-3 rounded text-white font-semibold hover:opacity-90 transition-opacity"
                             style={{ backgroundColor: '#00AFB9' }}
                         >
-                            {itinerary ? 'Update Itinerary' : 'Save Itinerary'}
+                            {itinerary ? 'Update This Trip' : 'Save New Trip'}
                         </button>
                         
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="flex-1 px-6 py-3 rounded-md font-semibold shadow-lg hover:opacity-90 transition-all"
+                            className="flex-1 px-6 py-3 rounded font-semibold hover:opacity-90 transition-opacity"
                             style={{ backgroundColor: '#FED9B7', color: '#0081A7' }}
                         >
                             Cancel

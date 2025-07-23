@@ -1,10 +1,12 @@
+// adapted tailwind component for footer
+
 export default function Footer() {
     return (
         <footer style={{ backgroundColor: '#0081A7' }}>
         <div className="mx-auto max-w-7xl px-6 py-12 md:flex md:items-center md:justify-between lg:px-8">
             <div className="flex justify-center items-center gap-x-8 md:order-2">
             
-            {/* Social/Contact Links */}
+            {/* Icon Links */}
             <div className="flex gap-x-6">
                 {/* Facebook */}
                 <a 

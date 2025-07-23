@@ -1,19 +1,9 @@
-import { 
-    GlobeIcon, 
-    UsersIcon, 
-    MapIcon, 
-    PaperAirplaneIcon, 
-    CloudIcon, 
-    CalendarIcon, 
-    PhoneIcon 
-} from '../components/Icons'
-
 export const navigation = [
-    { name: 'Home', href: '/', icon: GlobeIcon },
-    { name: 'Clients', href: '/clients', icon: UsersIcon },
-    { name: 'Itineraries', href: '/itineraries', icon: MapIcon },
-    { name: 'Share Trips', href: '/share-trips', icon: PaperAirplaneIcon },
-    { name: 'Weather', href: '/weather', icon: CloudIcon },
-    { name: 'Activities', href: '/activities', icon: CalendarIcon },
-    { name: 'Contact Us', href: '/contact', icon: PhoneIcon },
+    { name: 'Home', href: '/'},
+    { name: 'Clients', href: '/clients' },
+    { name: 'Itineraries', href: '/itineraries'},
+    { name: 'Weather', href: '/weather'},
+    { name: 'Activities', href: '/activities'},
+    { name: 'Share Trips', href: '/share-trips'},
+    { name: 'Contact Us', href: '/contact'}
 ]

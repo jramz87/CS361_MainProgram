@@ -1,61 +1,31 @@
-const API_BASE = window.location.hostname === 'localhost' 
-    ? 'http://localhost:3001/api'
-    : '/api';
+// store client info as server side json files
 
 export const getAllClients = async () => {
-    try {
-        const response = await fetch(`${API_BASE}/clients`);
-        if (!response.ok) throw new Error('Failed to fetch clients');
-        return await response.json();
-    } catch (error) {
-        console.error('Get Clients Error:', error);
-        throw error;
-    }
+    const response = await fetch('http://localhost:3001/api/clients');
+    return await response.json();
 };
 
 export const createClient = async (clientData) => {
-    try {
-        const response = await fetch(`${API_BASE}/clients`, {
+    const response = await fetch('http://localhost:3001/api/clients', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(clientData),
-        });
-        if (!response.ok) throw new Error('Failed to create client');
-        return await response.json();
-    } catch (error) {
-        console.error('Create Client Error:', error);
-        throw error;
-    }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(clientData)
+    });
+    return await response.json();
 };
 
 export const updateClient = async (clientId, clientData) => {
-    try {
-        const response = await fetch(`${API_BASE}/clients/${clientId}`, {
+    const response = await fetch(`http://localhost:3001/api/clients/${clientId}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(clientData),
-        });
-        if (!response.ok) throw new Error('Failed to update client');
-        return await response.json();
-    } catch (error) {
-        console.error('Update Client Error:', error);
-        throw error;
-    }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(clientData)
+    });
+    return await response.json();
 };
 
 export const deleteClient = async (clientId) => {
-    try {
-        const response = await fetch(`${API_BASE}/clients/${clientId}`, {
-        method: 'DELETE',
-        });
-        if (!response.ok) throw new Error('Failed to delete client');
-        return await response.json();
-    } catch (error) {
-        console.error('Delete Client Error:', error);
-        throw error;
-    }
+    const response = await fetch(`http://localhost:3001/api/clients/${clientId}`, {
+        method: 'DELETE'
+    });
+    return await response.json();
 };

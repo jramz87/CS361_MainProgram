@@ -1,240 +1,212 @@
-import { useState } from 'react';
+// share trips page, utilizing same style cards as in itineraries and some tailwind components
+
+import { useState, useEffect } from 'react';
 
 export default function ShareTrips() {
-    const [selectedItinerary, setSelectedItinerary] = useState(null);
-    const [clientEmail, setClientEmail] = useState('');
-    const [customMessage, setCustomMessage] = useState('');
-    const [isSharing, setIsSharing] = useState(false);
-    const [shareSuccess, setShareSuccess] = useState(false);
+    const [trips, setTrips] = useState([]);
+    const [selected, setSelected] = useState(null);
+    const [email, setEmail] = useState('');
+    const [message, setMessage] = useState('');
+    const [sending, setSending] = useState(false);
+    const [success, setSuccess] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    // Mock saved itineraries
-    const savedItineraries = [
-        {
-            id: '1',
-            title: 'Paris Romantic Getaway',
-            destination: 'Paris, France',
-            dates: 'July 15-20, 2025',
-            client: 'John & Sarah Doe',
-            days: 5,
-            status: 'completed',
-            highlights: ['Eiffel Tower Visit', 'Seine River Cruise', 'Louvre Museum', 'Montmartre Walking Tour']
-        },
-        {
-            id: '2',
-            title: 'Tokyo Adventure',
-            destination: 'Tokyo, Japan',
-            dates: 'August 10-17, 2025',
-            client: 'Jane Smith',
-            days: 7,
-            status: 'completed',
-            highlights: ['Shibuya Crossing', 'Traditional Tea Ceremony', 'Mount Fuji Day Trip', 'Tsukiji Fish Market']
-        },
-        {
-            id: '3',
-            title: 'Bali Wellness Retreat',
-            destination: 'Bali, Indonesia',
-            dates: 'September 5-12, 2025',
-            client: 'Michael Johnson',
-            days: 7,
-            status: 'draft',
-            highlights: ['Yoga Sessions', 'Rice Terrace Tours', 'Temple Visits', 'Spa Treatments']
+    useEffect(() => {
+        loadTrips();
+    }, []);
+
+    async function loadTrips() {
+        try {
+            const res = await fetch('http://localhost:3001/api/itineraries');
+            const data = await res.json();
+            setTrips(data);
+        } catch (err) {
+            console.error('Failed to load trips:', err);
         }
-    ];
+        setLoading(false);
+    }
 
-    const handleEmailShare = async () => {
-        if (!selectedItinerary) {
-            alert('Please select an itinerary to share');
+    function sendEmail() {
+        if (!selected || !email) {
+            alert('Please select a trip and enter email');
             return;
         }
 
-        if (!clientEmail) {
-            alert('Please enter client email address');
-            return;
-        }
-
-        setIsSharing(true);
+        setSending(true);
         
-        // Simulate email sending
+        // fake API call for now
         setTimeout(() => {
-            setIsSharing(false);
-            setShareSuccess(true);
+            setSending(false);
+            setSuccess(true);
             
-            // Reset form after success
+            // reset form
             setTimeout(() => {
-                setShareSuccess(false);
-                setSelectedItinerary(null);
-                setClientEmail('');
-                setCustomMessage('');
-            }, 3000);
-        }, 2000);
-    };
+                setSuccess(false);
+                setSelected(null);
+                setEmail('');
+                setMessage('');
+            }, 2500);
+        }, 1500);
+    }
 
-    const getStatusColor = (status) => {
-        return status === 'completed' ? '#00AFB9' : '#F07167';
-    };
+    if (loading) {
+        return <div className="p-6">Loading trips...</div>;
+    }
 
     return (
         <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-3xl font-bold" style={{ color: '#0081A7' }}>
-                        Share Trips
-                    </h1>
-                    <p className="mt-2 text-lg" style={{ color: '#F07167' }}>
-                        Select a completed itinerary and send it directly to your client's email with a personal message.
-                    </p>
-                </div>
-            </div>
+            <h1 className="text-3xl font-bold mb-2" style={{ color: '#0081A7' }}>
+                Share Trips
+            </h1>
+            <p className="mb-6" style={{ color: '#F07167' }}>
+                Send itineraries to clients
+            </p>
 
             <div className="mb-6 p-6 rounded-lg" style={{ backgroundColor: '#FDFCDC' }}>
                 
-                {/* Itinerary Selection */}
+                {/* trip selection */}
                 <div className="mb-6">
-                    <label className="block text-sm font-medium mb-3" style={{ color: '#0081A7' }}>
-                        Choose Itinerary to Share
-                    </label>
-                    <div className="space-y-3">
-                        {savedItineraries.map((itinerary) => (
-                            <div 
-                                key={itinerary.id}
-                                className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                                    selectedItinerary?.id === itinerary.id ? 'ring-2' : ''
-                                }`}
-                                style={{ 
-                                    backgroundColor: selectedItinerary?.id === itinerary.id ? '#FED9B7' : '#FDFCDC',
-                                    borderColor: '#00AFB9',
-                                    ringColor: selectedItinerary?.id === itinerary.id ? '#00AFB9' : 'transparent'
-                                }}
-                                onClick={() => setSelectedItinerary(itinerary)}
-                            >
-                                <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-bold" style={{ color: '#0081A7' }}>
-                                        {itinerary.title}
-                                    </h3>
-                                    <span 
-                                        className="px-2 py-1 rounded text-xs font-medium text-white"
-                                        style={{ backgroundColor: getStatusColor(itinerary.status) }}
-                                    >
-                                        {itinerary.status.charAt(0).toUpperCase() + itinerary.status.slice(1)}
-                                    </span>
-                                </div>
-                                <div className="text-sm" style={{ color: '#0081A7' }}>
-                                    {itinerary.destination} • {itinerary.dates} • {itinerary.days} days
-                                </div>
-                                <div className="text-xs mt-1" style={{ color: '#0081A7', opacity: 0.7 }}>
-                                    Client: {itinerary.client}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                    <h3 className="font-medium mb-3" style={{ color: '#0081A7' }}>
+                        Pick a trip
+                    </h3>
 
-                {/* Email Form */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-2" style={{ color: '#0081A7' }}>
-                            Client Email Address *
-                        </label>
-                        <input
-                            type="email"
-                            value={clientEmail}
-                            onChange={(e) => setClientEmail(e.target.value)}
-                            placeholder="client@example.com"
-                            className="w-full p-3 rounded-md border"
-                            style={{ borderColor: '#00AFB9' }}
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-2" style={{ color: '#0081A7' }}>
-                            Custom Message (Optional)
-                        </label>
-                        <textarea
-                            value={customMessage}
-                            onChange={(e) => setCustomMessage(e.target.value)}
-                            rows={3}
-                            placeholder="Add a personal message..."
-                            className="w-full p-3 rounded-md border"
-                            style={{ borderColor: '#00AFB9' }}
-                        />
-                    </div>
-                </div>
-
-                {/* Send Button */}
-                <div className="mt-6">
-                    <button
-                        onClick={handleEmailShare}
-                        disabled={!selectedItinerary || !clientEmail || isSharing}
-                        className="px-6 py-3 rounded-md text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ backgroundColor: '#00AFB9' }}
-                    >
-                        {isSharing ? (
-                            <>
-                                <div className="animate-spin inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                                Sending Email...
-                            </>
-                        ) : (
-                            'Send Itinerary via Email'
-                        )}
-                    </button>
-                </div>
-            </div>
-
-            {/* Success Message */}
-            {shareSuccess && (
-                <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #00AFB9' }}>
-                    <div className="flex items-center">
-                        <span className="text-2xl mr-3">✅</span>
-                        <div>
-                            <h3 className="font-bold" style={{ color: '#0081A7' }}>
-                                Email Sent Successfully!
+                    {trips.length === 0 ? (
+                        <div className="text-center py-12">
+                            <h3 className="text-lg font-semibold mb-2" style={{ color: '#0081A7' }}>
+                                No trips yet
                             </h3>
-                            <p className="text-sm" style={{ color: '#0081A7' }}>
-                                Your itinerary has been sent to {clientEmail}
+                            <p style={{ color: '#F07167' }}>
+                                Create your first itinerary to get started
                             </p>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {trips.map((trip) => (
+                                <div 
+                                    key={trip.id}
+                                    className={`p-4 rounded border cursor-pointer ${
+                                        selected?.id === trip.id ? 'ring-2' : ''
+                                    }`}
+                                    style={{ 
+                                        backgroundColor: selected?.id === trip.id ? '#FED9B7' : '#FDFCDC',
+                                        borderColor: '#00AFB9',
+                                        ringColor: selected?.id === trip.id ? '#00AFB9' : 'transparent'
+                                    }}
+                                    onClick={() => setSelected(trip)}
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h3 className="font-bold text-lg mb-1" style={{ color: '#0081A7' }}>
+                                                {trip.tripTitle || 'Untitled Trip'}
+                                            </h3>
+                                            
+                                            <div className="flex gap-2 mb-3">
+                                                <span 
+                                                    className="px-2 py-1 rounded text-xs text-white"
+                                                    style={{ backgroundColor: trip.status === 'Confirmed' ? '#00AFB9' : '#F07167' }}
+                                                >
+                                                    {trip.status || 'Planning'}
+                                                </span>
+                                                {trip.tripType && (
+                                                    <span 
+                                                        className="px-2 py-1 rounded text-xs"
+                                                        style={{ backgroundColor: '#FED9B7', color: '#0081A7' }}
+                                                    >
+                                                        {trip.tripType}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-1 text-sm" style={{ color: '#0081A7' }}>
+                                                {trip.clientName && <p>Client: {trip.clientName}</p>}
+                                                <p>Destination: {trip.destination}</p>
+                                                {trip.startDate && trip.endDate && (
+                                                    <p>Dates: {trip.startDate} - {trip.endDate}</p>
+                                                )}
+                                                {trip.numberOfTravelers && (
+                                                    <p>Travelers: {trip.numberOfTravelers}</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {selected?.id === trip.id && (
+                                            <div className="text-right">
+                                                <span className="text-sm font-medium" style={{ color: '#00AFB9' }}>
+                                                    Selected
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* email form */}
+                <div className="mb-6">
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Client email"
+                        className="w-full p-3 mb-3 rounded border"
+                        style={{ borderColor: '#00AFB9' }}
+                    />
+                    <textarea
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        placeholder="Optional message"
+                        rows={3}
+                        className="w-full p-3 rounded border"
+                        style={{ borderColor: '#00AFB9' }}
+                    />
+                </div>
+
+                <button
+                    onClick={sendEmail}
+                    disabled={!selected || !email || sending}
+                    className="px-6 py-2 rounded text-white disabled:opacity-50"
+                    style={{ backgroundColor: '#00AFB9' }}
+                >
+                    {sending ? 'Sending...' : 'Send Email'}
+                </button>
+            </div>
+
+            {success && (
+                <div className="p-4 mb-6 rounded" style={{ backgroundColor: '#FED9B7' }}>
+                    <p style={{ color: '#0081A7' }}>
+                        ✓ Sent to {email}!
+                    </p>
                 </div>
             )}
 
-            {/* Preview Section */}
-            {selectedItinerary && (
-                <div className="p-6 rounded-lg" style={{ backgroundColor: '#FDFCDC' }}>
-                    <h2 className="text-xl font-bold mb-4" style={{ color: '#0081A7' }}>
+            {/* preview */}
+            {selected && (
+                <div className="p-6 rounded" style={{ backgroundColor: '#FDFCDC' }}>
+                    <h3 className="font-bold mb-4" style={{ color: '#0081A7' }}>
                         Email Preview
-                    </h2>
+                    </h3>
                     
-                    <div className="p-4 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #00AFB9' }}>
-                        <h3 className="font-bold mb-3" style={{ color: '#0081A7' }}>
-                            Subject: Your {selectedItinerary.title} Itinerary
-                        </h3>
+                    <div className="p-4 rounded" style={{ backgroundColor: '#FED9B7' }}>
+                        <p className="font-bold mb-2">Subject: Your {selected.tripTitle} Itinerary</p>
                         
-                        <div className="text-sm space-y-2" style={{ color: '#0081A7' }}>
-                            <p>Dear {selectedItinerary.client.split(' ')[0]},</p>
+                        <div className="text-sm space-y-2">
+                            <p>Hi {selected.clientName?.split(' ')[0] || 'there'},</p>
                             
-                            {customMessage && (
-                                <p className="italic">"{customMessage}"</p>
-                            )}
+                            {message && <p>"{message}"</p>}
                             
-                            <p>Please find your detailed travel itinerary below:</p>
+                            <p>Here's your travel itinerary:</p>
                             
-                            <div className="my-3 p-3 rounded" style={{ backgroundColor: '#FDFCDC' }}>
-                                <div><strong>Trip:</strong> {selectedItinerary.title}</div>
-                                <div><strong>Destination:</strong> {selectedItinerary.destination}</div>
-                                <div><strong>Dates:</strong> {selectedItinerary.dates}</div>
-                                <div><strong>Duration:</strong> {selectedItinerary.days} days</div>
-                                <div className="mt-2">
-                                    <strong>Highlights:</strong>
-                                    <ul className="ml-4 mt-1">
-                                        {selectedItinerary.highlights.map((highlight, index) => (
-                                            <li key={index}>• {highlight}</li>
-                                        ))}
-                                    </ul>
-                                </div>
+                            <div className="p-3 my-3 rounded" style={{ backgroundColor: 'white' }}>
+                                <p><strong>Trip:</strong> {selected.tripTitle}</p>
+                                <p><strong>Where:</strong> {selected.destination}</p>
+                                <p><strong>When:</strong> {selected.startDate} - {selected.endDate}</p>
+                                <p><strong>Travelers:</strong> {selected.numberOfTravelers}</p>
                             </div>
                             
-                            <p>If you have any questions, please don't hesitate to contact me.</p>
-                            <p>Best regards,<br/>Experience Travel by Gigi</p>
+                            <p>Questions? Just reply!</p>
+                            <p>-Gigi</p>
                         </div>
                     </div>
                 </div>

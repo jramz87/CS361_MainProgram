@@ -1,4 +1,4 @@
-import { BarsIcon } from './Icons';
+// adapted a tailwind component for the topbar
 
 export default function Topbar({ onMenuClick }) {
     return (
@@ -10,7 +10,6 @@ export default function Topbar({ onMenuClick }) {
             style={{ color: '#0081A7' }}
         >
             <span className="sr-only">Open sidebar</span>
-            <BarsIcon />
         </button>
         <div className="flex flex-1 justify-end">
             <span className="text-sm font-medium" style={{ color: '#0081A7' }}>Welcome back, Travel Agent!</span>

@@ -1,57 +1,19 @@
-const API_BASE_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:3001/api'
-    : '/api';
-
 export const getWeatherForecast = async (location, startDate, endDate) => {
-    if (!location || !startDate || !endDate) {
-        throw new Error('Location, start date, and end date are required');
+    const response = await fetch(`http://localhost:3001/api/weather/forecast?location=${location}&startDate=${startDate}&endDate=${endDate}`);
+    
+    if (!response.ok) {
+        throw new Error('Could not get weather data');
     }
-
-    const params = new URLSearchParams({
-        location: location.trim(),
-        startDate,
-        endDate
-    });
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/weather/forecast?${params}`);
-        
-        if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Request failed with status: ${response.status}`);
-        }
-
-        return await response.json();
-    } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        throw new Error('Unable to connect to weather service');
-        }
-        throw error;
-    }
+    
+    return await response.json();
 };
 
 export const getCurrentWeather = async (location) => {
-    if (!location) {
-        throw new Error('Location is required');
+    const response = await fetch(`http://localhost:3001/api/weather/current?location=${location}`);
+    
+    if (!response.ok) {
+        throw new Error('Could not get current weather');
     }
-
-    const params = new URLSearchParams({
-        location: location.trim()
-    });
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/weather/current?${params}`);
-        
-        if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Request failed with status: ${response.status}`);
-        }
-
-        return await response.json();
-    } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        throw new Error('Unable to connect to weather service');
-        }
-        throw error;
-    }
+    
+    return await response.json();
 };

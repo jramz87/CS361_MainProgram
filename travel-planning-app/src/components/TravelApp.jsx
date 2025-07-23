@@ -1,4 +1,4 @@
-// Update your existing TravelApp component
+// This component is used to define the general layout of the travel app
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
