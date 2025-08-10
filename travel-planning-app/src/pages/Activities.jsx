@@ -151,43 +151,17 @@ export default function Activities() {
                         {timeOfYear && <span className="text-lg font-normal"> • {timeOfYear.charAt(0).toUpperCase() + timeOfYear.slice(1)}</span>}
                     </h3>
                     
-                    {/* General Tips */}
-                    {recommendations.recommendations?.generalTips && (
-                        <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #00AFB9' }}>
-                            <h4 className="font-bold mb-3" style={{ color: '#0081A7' }}>
-                                Top Recommendations
-                            </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                {recommendations.recommendations.generalTips.map((tip, index) => (
-                                    <div key={index} className="text-sm" style={{ color: '#0081A7' }}>
-                                        • {tip}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Raw AI Response */}
+                    {/* Just show the complete AI response */}
                     {recommendations.rawResponse && (
                         <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #00AFB9' }}>
                             <h4 className="font-medium mb-2" style={{ color: '#0081A7' }}>
-                                Detailed Recommendations
+                                Recommendations
                             </h4>
                             <div className="text-sm whitespace-pre-wrap" style={{ color: '#0081A7', lineHeight: '1.6' }}>
                                 {recommendations.rawResponse}
                             </div>
                         </div>
                     )}
-
-                    {/* Itinerary Suggestion */}
-                    <div className="p-4 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #00AFB9' }}>
-                        <h4 className="font-bold mb-2" style={{ color: '#0081A7' }}>
-                            Want a Detailed Itinerary?
-                        </h4>
-                        <p className="text-sm" style={{ color: '#0081A7' }}>
-                            For personalized day-by-day recommndations based on specific client preferences, weather forecasts, and travel dates, create a custom itinerary in the planning section.
-                        </p>
-                    </div>
                 </div>
             )}
 

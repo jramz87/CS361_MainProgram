@@ -10,6 +10,10 @@ export default function Contact() {
         email: '',
         message: ''
     });
+    
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
+    const [error, setError] = useState(null);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -17,11 +21,62 @@ export default function Contact() {
             ...prev,
             [name]: value
         }));
+        
+        // clear error when user starts typing
+        if (error) setError(null);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Form submitted:', formData);
+        
+        if (!formData.firstName || !formData.lastName || !formData.email || !formData.message) {
+            setError('Please fill in all required fields');
+            return;
+        }
+        
+        if (formData.message.length > 1000) {
+            setError('Message must be 1000 characters or less');
+            return;
+        }
+        
+        setLoading(true);
+        setError(null);
+        
+        try {
+            const response = await fetch('http://localhost:3005/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to submit contact form');
+            }
+            
+            setSuccess(true);
+            
+            // reset form after success
+            setTimeout(() => {
+                setFormData({
+                    firstName: '',
+                    lastName: '',
+                    company: '',
+                    email: '',
+                    message: ''
+                });
+                setSuccess(false);
+            }, 5000);
+            
+        } catch (err) {
+            console.error('Contact form error:', err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (    // using a tailwind form
@@ -46,17 +101,37 @@ export default function Contact() {
             </div>
             
             <div className="mx-auto mt-16 max-w-xl sm:mt-20">
+                
+                {/* Success Message */}
+                {success && (
+                    <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #00AFB9' }}>
+                        <p style={{ color: '#0081A7' }}>
+                            ✓ Thank you! Your message has been sent successfully. We'll get back to you soon.
+                        </p>
+                    </div>
+                )}
+                
+                {/* Error Message */}
+                {error && (
+                    <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #F07167' }}>
+                        <p style={{ color: '#0081A7' }}>
+                            Error: {error}
+                        </p>
+                    </div>
+                )}
+                
                 <form onSubmit={handleSubmit}>
                     <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
                         <div>
                             <label htmlFor="firstName" className="block text-sm font-semibold leading-6" style={{ color: '#0081A7' }}>
-                                First name
+                                First name *
                             </label>
                             <div className="mt-2.5">
                                 <input
                                     type="text"
                                     name="firstName"
                                     id="firstName"
+                                    required
                                     value={formData.firstName}
                                     onChange={handleInputChange}
                                     className="block w-full rounded-md border-0 px-3.5 py-2 text-sm shadow-sm ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6"
@@ -71,13 +146,14 @@ export default function Contact() {
                         
                         <div>
                             <label htmlFor="lastName" className="block text-sm font-semibold leading-6" style={{ color: '#0081A7' }}>
-                                Last name
+                                Last name *
                             </label>
                             <div className="mt-2.5">
                                 <input
                                     type="text"
                                     name="lastName"
                                     id="lastName"
+                                    required
                                     value={formData.lastName}
                                     onChange={handleInputChange}
                                     className="block w-full rounded-md border-0 px-3.5 py-2 text-sm shadow-sm ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6"
@@ -113,13 +189,14 @@ export default function Contact() {
                         
                         <div className="sm:col-span-2">
                             <label htmlFor="email" className="block text-sm font-semibold leading-6" style={{ color: '#0081A7' }}>
-                                Email
+                                Email *
                             </label>
                             <div className="mt-2.5">
                                 <input
                                     type="email"
                                     name="email"
                                     id="email"
+                                    required
                                     value={formData.email}
                                     onChange={handleInputChange}
                                     className="block w-full rounded-md border-0 px-3.5 py-2 text-sm shadow-sm ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6"
@@ -134,15 +211,21 @@ export default function Contact() {
                         
                         <div className="sm:col-span-2">
                             <label htmlFor="message" className="block text-sm font-semibold leading-6" style={{ color: '#0081A7' }}>
-                                Message
+                                Message * 
+                                <span className="text-xs font-normal">
+                                    ({formData.message.length}/1000 characters)
+                                </span>
                             </label>
                             <div className="mt-2.5">
                                 <textarea
                                     name="message"
                                     id="message"
-                                    rows={4}
+                                    rows={6}
+                                    required
+                                    maxLength={1000}
                                     value={formData.message}
                                     onChange={handleInputChange}
+                                    placeholder="Please describe your question, feedback, or issue in detail..."
                                     className="block w-full rounded-md border-0 px-3.5 py-2 text-sm shadow-sm ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6"
                                     style={{ 
                                         backgroundColor: '#FDFCDC', 
@@ -157,10 +240,11 @@ export default function Contact() {
                     <div className="mt-10">
                         <button
                             type="submit"
-                            className="block w-full rounded-md px-3.5 py-2.5 text-center text-sm font-semibold text-white shadow-sm hover:opacity-90"
+                            disabled={loading}
+                            className="block w-full rounded-md px-3.5 py-2.5 text-center text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:opacity-50"
                             style={{ backgroundColor: '#00AFB9' }}
                         >
-                            Get Started
+                            {loading ? 'Sending...' : 'Send Message'}
                         </button>
                     </div>
                 </form>

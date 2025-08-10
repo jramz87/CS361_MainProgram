@@ -1,53 +1,112 @@
 [
   {
-    "tripTitle": "Paris Adventure 2024",
-    "clientName": "Jessica Ramirez",
+    "tripTitle": "Adventure Trip",
+    "clientName": "Boby Jim",
     "destination": "Paris, France",
-    "startDate": "2025-08-01",
-    "endDate": "2025-08-02",
+    "startDate": "2025-08-12",
+    "endDate": "2025-08-14",
     "numberOfTravelers": 1,
-    "tripType": "Leisure",
-    "notes": "cats allowed",
-    "dailyPlans": [
-      {
-        "date": "2025-08-01",
-        "weather": "74°F - Partially cloudy",
-        "activities": "test1"
-      },
-      {
-        "date": "2025-08-02",
-        "weather": "68°F - Partially cloudy",
-        "activities": "test2"
-      }
-    ],
-    "id": "1752894746017"
-  },
-  {
-    "tripTitle": "Miami",
-    "clientName": "Klaus von Hellman",
-    "destination": "miami, florida",
-    "startDate": "2026-10-01",
-    "endDate": "2026-10-03",
-    "numberOfTravelers": "1",
     "tripType": "Business",
     "notes": "",
     "dailyPlans": [
       {
-        "date": "2026-10-01",
-        "weather": "81°F - Partially cloudy",
+        "date": "2025-08-12",
+        "weather": "80°F - Partially cloudy",
         "activities": ""
       },
       {
-        "date": "2026-10-02",
-        "weather": "81°F - Partially cloudy",
-        "activities": ""
-      },
-      {
-        "date": "2026-10-03",
+        "date": "2025-08-13",
         "weather": "82°F - Partially cloudy",
+        "activities": ""
+      },
+      {
+        "date": "2025-08-14",
+        "weather": "85°F - Partially cloudy",
         "activities": ""
       }
     ],
-    "id": "1752895092202"
+    "id": "1754854383907"
+  },
+  {
+    "tripTitle": "Sally's Trip",
+    "clientName": "Sally Joe",
+    "destination": "Geneva, Switzerland",
+    "startDate": "2025-08-17",
+    "endDate": "2025-08-24",
+    "numberOfTravelers": 1,
+    "tripType": "Adventure",
+    "notes": "",
+    "dailyPlans": [
+      {
+        "date": "2025-08-17",
+        "weather": "72°F - Partially cloudy",
+        "activities": ""
+      },
+      {
+        "date": "2025-08-18",
+        "weather": "74°F - Clear",
+        "activities": ""
+      },
+      {
+        "date": "2025-08-19",
+        "weather": "74°F - Partially cloudy",
+        "activities": ""
+      },
+      {
+        "date": "2025-08-20",
+        "weather": "73°F - Partially cloudy",
+        "activities": ""
+      },
+      {
+        "date": "2025-08-21",
+        "weather": "72°F - Partially cloudy",
+        "activities": ""
+      },
+      {
+        "date": "2025-08-22",
+        "weather": "66°F - Overcast",
+        "activities": ""
+      },
+      {
+        "date": "2025-08-23",
+        "weather": "61°F - Partially cloudy",
+        "activities": ""
+      },
+      {
+        "date": "2025-08-24",
+        "weather": "62°F - Partially cloudy",
+        "activities": ""
+      }
+    ],
+    "id": "1754855991882"
+  },
+  {
+    "tripTitle": "Miami Fun",
+    "clientName": "Bob Seager",
+    "destination": "miami, florida",
+    "startDate": "2025-08-11",
+    "endDate": "2025-08-13",
+    "numberOfTravelers": 1,
+    "tripType": "Leisure",
+    "notes": "",
+    "dailyPlans": [
+      {
+        "date": "2025-08-11",
+        "weather": "86°F - Partially cloudy",
+        "activities": ""
+      },
+      {
+        "date": "2025-08-12",
+        "weather": "86°F - Rain, Partially cloudy",
+        "activities": ""
+      },
+      {
+        "date": "2025-08-13",
+        "weather": "86°F - Rain, Partially cloudy",
+        "activities": ""
+      }
+    ],
+    "status": "Planning",
+    "id": "1754858497056"
   }
 ]

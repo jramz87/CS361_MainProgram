@@ -1,30 +1,42 @@
 [
   {
-    "id": "1752882833769",
-    "firstName": "Jessica",
-    "lastName": "Ramirez",
-    "email": "jramz1897@gmail.com",
-    "phone": "3059657012",
+    "firstName": "Bob",
+    "lastName": "Seager",
+    "email": "bob@me.com",
+    "phone": "123-456-7899",
     "budget": "$1,500 to $2,500",
     "activities": [
       "Beach",
-      "Nature",
-      "Adventure"
+      "Nature"
     ],
-    "notes": "travels with a cat"
+    "notes": "travels with his cat",
+    "id": "1753665840332"
   },
   {
-    "firstName": "Klaus",
-    "lastName": "von Hellman",
-    "email": "klaus@meow.com",
-    "phone": "999-123-4567",
+    "firstName": "Boby",
+    "lastName": "Jim",
+    "email": "boby@gmail.com",
+    "phone": "999-999-9999",
     "budget": "$9,000+",
     "activities": [
-      "Nightlife",
-      "Food & Drink",
-      "Relaxation"
+      "Beach",
+      "Nature"
     ],
-    "notes": "klaus is a cat.",
-    "id": "1752942987296"
+    "notes": "travels with a dog",
+    "id": "1753666436694"
+  },
+  {
+    "firstName": "Sally",
+    "lastName": "Joe",
+    "email": "sally@gmail.com",
+    "phone": "3059657012",
+    "budget": "$9,000+",
+    "activities": [
+      "Beach",
+      "Sports",
+      "Culture"
+    ],
+    "notes": "travels with a ferret",
+    "id": "1753667022612"
   }
 ]

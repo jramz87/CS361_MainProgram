@@ -9,6 +9,7 @@ export default function ShareTrips() {
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -17,36 +18,61 @@ export default function ShareTrips() {
 
     async function loadTrips() {
         try {
-            const res = await fetch('http://localhost:3001/api/itineraries');
+            // load from the microservice instead of main backend
+            const res = await fetch('http://localhost:3004/api/itineraries');
             const data = await res.json();
             setTrips(data);
         } catch (err) {
             console.error('Failed to load trips:', err);
+            setError('Failed to load trips');
         }
         setLoading(false);
     }
 
-    function sendEmail() {
+    async function sendEmail() {
         if (!selected || !email) {
-            alert('Please select a trip and enter email');
+            setError('Please select a trip and enter email');
             return;
         }
 
         setSending(true);
+        setError(null);
         
-        // fake API call for now
-        setTimeout(() => {
-            setSending(false);
+        try {
+            const response = await fetch('http://localhost:3004/api/share-itinerary', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    itineraryId: selected.id,
+                    email: email,
+                    customMessage: message
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to send email');
+            }
+
             setSuccess(true);
             
-            // reset form
+            // reset form after success
             setTimeout(() => {
                 setSuccess(false);
                 setSelected(null);
                 setEmail('');
                 setMessage('');
-            }, 2500);
-        }, 1500);
+            }, 3000);
+
+        } catch (err) {
+            console.error('Send email error:', err);
+            setError(err.message);
+        } finally {
+            setSending(false);
+        }
     }
 
     if (loading) {
@@ -59,7 +85,7 @@ export default function ShareTrips() {
                 Share Trips
             </h1>
             <p className="mb-6" style={{ color: '#F07167' }}>
-                Send itineraries to clients
+                Send itineraries to clients via email
             </p>
 
             <div className="mb-6 p-6 rounded-lg" style={{ backgroundColor: '#FDFCDC' }}>
@@ -156,7 +182,7 @@ export default function ShareTrips() {
                     <textarea
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
-                        placeholder="Optional message"
+                        placeholder="Optional personal message for the client"
                         rows={3}
                         className="w-full p-3 rounded border"
                         style={{ borderColor: '#00AFB9' }}
@@ -169,14 +195,24 @@ export default function ShareTrips() {
                     className="px-6 py-2 rounded text-white disabled:opacity-50"
                     style={{ backgroundColor: '#00AFB9' }}
                 >
-                    {sending ? 'Sending...' : 'Send Email'}
+                    {sending ? 'Sending Email...' : 'Send Itinerary'}
                 </button>
             </div>
 
-            {success && (
-                <div className="p-4 mb-6 rounded" style={{ backgroundColor: '#FED9B7' }}>
+            {/* Error Display */}
+            {error && (
+                <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#FED9B7', border: '1px solid #F07167' }}>
                     <p style={{ color: '#0081A7' }}>
-                        ✓ Sent to {email}!
+                        Error: {error}
+                    </p>
+                </div>
+            )}
+
+            {/* Success Display */}
+            {success && (
+                <div className="p-4 mb-6 rounded" style={{ backgroundColor: '#FED9B7', border: '1px solid #00AFB9' }}>
+                    <p style={{ color: '#0081A7' }}>
+                        ✓ Itinerary sent to {email}!
                     </p>
                 </div>
             )}
@@ -192,21 +228,28 @@ export default function ShareTrips() {
                         <p className="font-bold mb-2">Subject: Your {selected.tripTitle} Itinerary</p>
                         
                         <div className="text-sm space-y-2">
-                            <p>Hi {selected.clientName?.split(' ')[0] || 'there'},</p>
+                            <p>Dear {selected.clientName?.split(' ')[0] || 'Traveler'},</p>
                             
-                            {message && <p>"{message}"</p>}
+                            {message && (
+                                <div className="p-2 bg-white rounded border-l-4" style={{ borderColor: '#F07167' }}>
+                                    <p><strong>Personal Message:</strong></p>
+                                    <p>"{message}"</p>
+                                </div>
+                            )}
                             
-                            <p>Here's your travel itinerary:</p>
+                            <p>Here are the details for your upcoming trip:</p>
                             
                             <div className="p-3 my-3 rounded" style={{ backgroundColor: 'white' }}>
                                 <p><strong>Trip:</strong> {selected.tripTitle}</p>
-                                <p><strong>Where:</strong> {selected.destination}</p>
-                                <p><strong>When:</strong> {selected.startDate} - {selected.endDate}</p>
+                                <p><strong>Destination:</strong> {selected.destination}</p>
+                                <p><strong>Dates:</strong> {selected.startDate} - {selected.endDate}</p>
                                 <p><strong>Travelers:</strong> {selected.numberOfTravelers}</p>
+                                {selected.tripType && <p><strong>Type:</strong> {selected.tripType}</p>}
+                                {selected.status && <p><strong>Status:</strong> {selected.status}</p>}
                             </div>
                             
-                            <p>Questions? Just reply!</p>
-                            <p>-Gigi</p>
+                            <p>If you have any questions or would like to make changes, please don't hesitate to reach out!</p>
+                            <p>Best regards,<br/>Your Travel Agent</p>
                         </div>
                     </div>
                 </div>

@@ -4,15 +4,12 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from 'dotenv';
-import { GenAIRecommendationService } from './services/genAIRecommendations.js';
-
 
 config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3001;
-const genAIService = new GenAIRecommendationService();
 
 app.use(cors({
     origin: 'http://localhost:3000',
@@ -124,44 +121,6 @@ app.get('/api/weather/forecast', async (req, res) => {
     } catch (error) {
         console.log('Weather error:', error);
         res.status(500).json({ error: 'Could not get weather' });
-    }
-});
-
-// genAI activity recommendations
-app.post('/api/explore-destination', async (req, res) => {
-    const { destination, timeOfYear } = req.body;
-    
-    if (!destination) {
-        return res.status(400).json({ error: 'Destination is required' });
-    }
-
-    try {
-        const weatherData = { location: destination };
-        const preferences = { 
-            timeOfYear,
-            explorationType: 'destination-overview'
-        };
-        
-        const result = await genAIService.getAIRecommendations(weatherData, preferences);
-        
-        res.json({
-            success: true,
-            data: result
-        });
-
-    } catch (error) {
-        console.log('explore destination error:', error);
-        
-        // handle different AI API errors, these are the ones ive encountered at least
-        if (error.message.includes('AI_RATE_LIMIT')) {
-            return res.status(429).json({ error: 'Too many requests - please try again later' });
-        } else if (error.message.includes('AI_API_AUTH')) {
-            return res.status(500).json({ error: 'AI service configuration error' });
-        } else if (error.message.includes('AI_API_NOT_CONFIGURED')) {
-            return res.status(500).json({ error: 'AI service not available' });
-        }
-        
-        res.status(500).json({ error: 'Failed to get destination recommendations' });
     }
 });
 

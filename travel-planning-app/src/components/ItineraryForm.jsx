@@ -159,37 +159,9 @@ export default function ItineraryForm({ itinerary = null, onSave, onCancel }) {
             return;
         }
         
-        try {
-            const method = itinerary ? 'PUT' : 'POST';
-            const url = itinerary 
-                ? `http://localhost:3001/api/itineraries/${itinerary.id}`
-                : 'http://localhost:3001/api/itineraries';
-                
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData)
-            });
-            
-            if (!response.ok) {
-                console.log('server error:', response.status);
-                throw new Error(`Failed to save: ${response.status}`);
-            }
-            
-            const savedTrip = await response.json();
-            console.log('trip saved!', savedTrip);
-            alert('Trip saved!');
-            
-            // call parent callback if exists
-            if (onSave && typeof onSave === 'function') {
-                onSave(savedTrip);
-            }
-            
-        } catch (error) {
-            console.error('save error:', error);
-            alert('Could not save trip');
+        // Remove all the fetch logic and just call the parent callback
+        if (onSave && typeof onSave === 'function') {
+            onSave(formData);
         }
     };
 

@@ -6,6 +6,7 @@ import Itineraries from './pages/Itineraries';
 import ShareTrips from './pages/ShareTrips';
 import Weather from './pages/Weather';
 import Activities from './pages/Activities';
+import CurrencyConverter from './pages/CurrencyConverter';
 import Contact from './pages/Contact';
 import './index.css';
 
@@ -17,9 +18,10 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="clients" element={<Clients />} />
           <Route path="itineraries" element={<Itineraries />} />
-          <Route path="share-trips" element={<ShareTrips />} />
           <Route path="weather" element={<Weather />} />
           <Route path="activities" element={<Activities />} />
+          <Route path="/currency" element={<CurrencyConverter />} /> 
+          <Route path="share-trips" element={<ShareTrips />} />
           <Route path="contact" element={<Contact />} />
         </Route>
       </Routes>
